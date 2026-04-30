@@ -14,7 +14,7 @@ Welcome to the FFT Channel Vocoder documentation! This guide covers everything f
 
 ## Design and Technical Details
 
-- **[Design Philosophy](../design/index.md)** — Accessibility-first design, why FFT, automation approach
+- **[Design Philosophy](../design/design.md)** — Accessibility-first design, why FFT, automation approach
 - **[Algorithm Deep Dive](../design/algorithm.md)** — Technical details for audio engineers and researchers
 
 ---
@@ -45,6 +45,6 @@ The FFT Channel Vocoder is a Python tool that applies the spectral characteristi
 
 **Ready to get started?** Check out [File Organization](04-file-organization.md) to prepare your audio files.
 
-**Curious about the design?** See the [Design Philosophy](../design/index.md) to understand why we built it this way and the accessibility principles that guide development.
+**Curious about the design?** See the [Design Philosophy](../design/design.md) to understand why we built it this way and the accessibility principles that guide development.
 
 **Want the technical details?** Check the [Algorithm Deep Dive](../design/algorithm.md) for a complete mathematical and technical explanation.

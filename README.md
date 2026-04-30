@@ -7,7 +7,7 @@ Designed with accessibility as a core principle: CLI first, no GUI, cross-platfo
 ## Documentation
 
 - 📚 **[Documentation](docs/index.md)** — Installation, tutorials, configuration, and troubleshooting
-- 🎨 **[Design Philosophy](design/index.md)** — Why we built it this way, design decisions, and algorithm choices
+- 🎨 **[Design Philosophy](design/design.md)** — Why we built it this way, design decisions, and algorithm choices
 - ⚙️ **[Algorithm Deep Dive](design/algorithm.md)** — Technical details for audio engineers and researchers
 
 ## Features
