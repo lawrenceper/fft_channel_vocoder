@@ -1,0 +1,83 @@
+# main.py
+
+# This is where all the majic happens.
+# This does the automation of opening a file, generating new sound, processing with the vocoder, and saving.
+
+from pathlib import Path
+from . import fft
+from . import clean_audio
+from . import clean_io
+from . import midi_synth
+from .noise_generators import white_noise
+
+def files_exist(path, name, extension):
+    """
+    Generator that iterates through all possible files that exist
+    Args:
+        path: The path to search for the files
+        name, the name of the file
+        extension, the extension of the file
+    Yields:
+        path+name+int+extention
+    """
+    path = Path(path)
+    i = 1
+
+    while True:
+        suffix = f"{name}{i if i else ''}.{extension}"
+        filepath = path / suffix
+
+        if not clean_io.does_exist(filepath):
+            break
+
+        yield (filepath, f"{name}{i if i else ''}")
+        i += 1
+
+def whisper(data):
+    """
+    Generates white noise data and vocodes
+    """
+    noise = white_noise(len(data))
+    return fft.vocode(data, noise)
+
+
+
+def main():
+    """Run the full vocoder pipeline: load → generate → vocode → save."""
+
+    input_path = Path("input")
+    output_path = Path("output")
+
+    # Loop through all voices
+    for voice_file, voice_name in files_exist(input_path, "voice", "wav"):
+        print(f"Loading audio from {voice_file.name}")
+        voice_data = clean_io.load(voice_file)
+
+        # Get all MIDI files
+        for midi_file, midi_name in files_exist(input_path, "melody", "mid"):
+            print(f"Getting carier wave from {midi_file.name}")
+            carrier_data = midi_synth.synthesize_carrier_wave(midi_file)
+            print("Applying vocoder")
+            output_data = fft.vocode(voice_data, carrier_data)
+            clean_io.save(output_path / f"{voice_name}_{midi_name}.wav", output_data)
+
+        # Get all synth wave files
+        for synth_file, synth_name in files_exist(input_path, "synth", "wav"):
+            print(f"Loading carrier wave from {synth_file.name}")
+            carrier_data = clean_io.load(synth_file)
+            print("Applying vocoder")
+            output_data = fft.vocode(voice_data, carrier_data)
+            clean_io.save(output_path / f"{voice_name}_{synth_name}.wav", output_data)
+
+        # Generate whisper track and save
+        print("Generating stereo whisper track")
+        stereo_whisper = clean_audio.make_stereo(
+            whisper(voice_data),
+            whisper(voice_data)
+        )
+        print("Saving stereo pair")
+        clean_io.save(output_path / f"{voice_name}_whisper.wav", stereo_whisper)
+
+
+if __name__ == "__main__":
+    main()

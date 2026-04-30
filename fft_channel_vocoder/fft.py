@@ -1,0 +1,137 @@
+from .config import sample_rate
+from .config import fft_size as fft_power
+import numpy as np
+from scipy.signal import stft, istft
+from scipy.ndimage import gaussian_filter1d
+from . import clean_audio
+
+# Design choices and notes for AI
+# I am using variables that make sense rather than their standard form or abreviation.
+# This is because I am a beginner in FFT processing,
+# and I want to make it clear to me what's happening
+# with the voice (the modulator) and the carrier wave.
+
+# Calculate FFT window size so that the values are exactly powers of two.
+fft_size = 2**fft_power
+# Hop must always be 1/4 of the window size
+hop = fft_size // 4
+
+
+def get_stft(voice, carrier):
+    """Compute the STFT of voice and carrier and extract magnitude and phase.
+
+    Args:
+        voice: 1D float32 numpy array of the modulator (voice) signal.
+        carrier: 1D float32 numpy array of the carrier signal.
+
+    Returns:
+        Tuple of (voice_mag, carrier_mag, carrier_phase) where each is a 2D
+        numpy array with shape (frequency_bins, time_frames).
+    """
+    # 1. Get STFT
+    _, _, voice_stft = stft(
+        voice, fs=sample_rate, nperseg=fft_size, noverlap=fft_size - hop
+    )
+    _, _, carrier_stft = stft(
+        carrier, fs=sample_rate, nperseg=fft_size, noverlap=fft_size - hop
+    )
+    # Mag means magnitude
+    voice_mag = np.abs(voice_stft)
+    carrier_mag = np.abs(carrier_stft)
+    carrier_phase = np.angle(carrier_stft)
+    return (voice_mag, carrier_mag, carrier_phase)
+
+
+def process_fft(voice_mag, carrier_mag):
+    """Apply spectral envelope transfer from voice to carrier.
+
+    Smooths both magnitude spectra to extract formant envelopes, then applies
+    spectral whitening on the carrier before multiplying by the voice envelope.
+
+    Args:
+        voice_mag: 2D numpy array of voice STFT magnitudes (frequency x time).
+        carrier_mag: 2D numpy array of carrier STFT magnitudes (frequency x time).
+
+    Returns:
+        2D numpy array of output magnitudes with the voice's spectral shape
+        imposed on the carrier.
+    """
+    # 2. Spectral Smoothing (This replaces the 40-filter bank)
+    # We blur the voice magnitude across the frequency bins
+
+    # sigma=4 or 8 blurs the bins enough to capture 'formants' but not 'pitch'
+    sigma = 8
+    voice_env = gaussian_filter1d(voice_mag, sigma=sigma, axis=0)
+    carrier_env = gaussian_filter1d(carrier_mag, sigma=sigma, axis=0)
+
+    # 3. Apply: (Synth / Synth_Env) * Voice_Env
+    # The (carrier_mag / carrier_env) part is 'Spectral Whitening'
+    # white here means whitening
+    # env means the envelope follower
+    carrier_white = carrier_mag / (carrier_env + 1e-6)
+    output_mag = carrier_white * voice_env
+    # I changed Y_mag here to output_mag for better consistency and beginner-friendly understanding
+    return output_mag
+
+
+def reconstruct_fft(output_mag, carrier_phase):
+    """Reconstruct a time-domain signal from magnitude and phase spectra.
+
+    Args:
+        output_mag: 2D numpy array of output magnitudes (frequency x time).
+        carrier_phase: 2D numpy array of carrier phase angles (frequency x time).
+
+    Returns:
+        1D numpy array of the reconstructed time-domain audio signal.
+    """
+    # 4. Reconstruct
+    Y = output_mag * np.exp(1j * carrier_phase)
+    _, output = istft(Y, fs=sample_rate, nperseg=fft_size, noverlap=fft_size - hop)
+    return output
+
+
+def trim(voice, carrier):
+    """Trim both arrays to the length of the shorter one.
+
+    Args:
+        voice: 1D numpy array of the voice signal.
+        carrier: 1D numpy array of the carrier signal.
+
+    Returns:
+        Tuple of (voice, carrier) both truncated to the same length.
+    """
+    # Handle Length Discrepancy (Match to the shortest)
+    min_length = min(len(voice), len(carrier))
+    voice = voice[:min_length]
+    carrier = carrier[:min_length]
+    return (voice, carrier)
+
+
+def vocode(voice, carrier):
+    """Apply FFT vocoding: impose the voice's spectral envelope on the carrier.
+
+    Args:
+        voice: 1D float32 numpy array of the modulator (voice) signal.
+        carrier: 1D float32 numpy array of the carrier signal.
+
+    Returns:
+        1D numpy array of the vocoded output signal.
+
+    Raises:
+        TypeError: If either argument is not a numpy array.
+        ValueError: If either array is not mono or is empty.
+    """
+    # Safety check
+    clean_audio.audio_check(voice, skip_mono_check=False)
+    clean_audio.audio_check(carrier, skip_mono_check=False)
+    # Trim the project before vocoding
+    trimmed_voice, trimmed_carrier = trim(voice, carrier)
+
+    # Get the STFTs used for vocoding
+    voice_mag, carrier_mag, carrier_phase = get_stft(trimmed_voice, trimmed_carrier)
+
+    # process the vocoder
+    output_mag = process_fft(voice_mag, carrier_mag)
+
+    # Reconstruct everything back together
+    return reconstruct_fft(output_mag, carrier_phase)
