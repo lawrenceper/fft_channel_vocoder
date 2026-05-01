@@ -8,6 +8,7 @@ from . import fft
 from . import clean_audio
 from . import clean_io
 from . import midi_synth
+from . import scale_synth
 from .noise_generators import white_noise
 
 def files_exist(path, name, extension):
@@ -32,6 +33,24 @@ def files_exist(path, name, extension):
 
         yield (filepath, f"{name}{i if i else ''}")
         i += 1
+
+def load_scale(scale_file):
+    """Load scale notes from a text file.
+
+    Args:
+        scale_file: Path to scale file.
+
+    Returns:
+        List of note class strings (e.g., ["c", "d", "e"]).
+    """
+    notes = []
+    with open(scale_file, 'r') as file:
+        for line in file:
+            line = line.strip()
+            if line and not line.startswith('#'):
+                notes.append(line.lower())
+    return notes
+
 
 def whisper(data):
     """
@@ -68,6 +87,18 @@ def main():
             print("Applying vocoder")
             output_data = fft.vocode(voice_data, carrier_data)
             clean_io.save(output_path / f"{voice_name}_{synth_name}.wav", output_data)
+
+        # Get all scale files for pitch correction
+        for scale_file, scale_name in files_exist(input_path, "scale", "txt"):
+            print(f"Loading scale from {scale_file.name}")
+            scale_notes = load_scale(scale_file)
+            print("Detecting pitch and correcting to scale")
+            carrier_data = scale_synth.synthesize_pitch_corrected_carrier(
+                voice_data, scale_notes, noise_gate_threshold_db=-40
+            )
+            print("Applying vocoder")
+            output_data = fft.vocode(voice_data, carrier_data)
+            clean_io.save(output_path / f"{voice_name}_{scale_name}.wav", output_data)
 
         # Generate whisper track and save
         print("Generating stereo whisper track")

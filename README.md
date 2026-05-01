@@ -13,7 +13,8 @@ Designed with accessibility as a core principle: CLI first, no GUI, cross-platfo
 ## Features
 
 - **Spectral Envelope Transfer**: Extracts formant information from voice and applies it to carrier signals
-- **Multiple Input Formats**: Supports voice files, MIDI files (synthesized to carrier waves), and pre-generated synth wave files
+- **Multiple Input Formats**: Supports voice files, MIDI files (synthesized to carrier waves), pre-generated synth wave files, and scale-based pitch correction
+- **Pitch Correction**: Optional automatic pitch detection and correction to user-defined musical scales with noise gate
 - **Batch Processing**: Automatically processes multiple input files with consistent naming patterns
 - **Generator-based Design**: Uses Python generators for efficient iteration through numbered file sequences
 - **Accessibility First**: CLI interface, fully accessible to screen readers, works across platforms
@@ -52,7 +53,24 @@ input/
 ├── melody2.mid
 ├── synth1.wav          # Pre-generated synth wave files as carrier
 ├── synth2.wav
-└── synth3.wav
+├── synth3.wav
+├── scale1.txt          # Scale files for pitch correction (one note per line)
+└── scale2.txt
+```
+
+**Scale File Format:**
+Each scale file contains one note class per line. Supported note classes are: `c`, `c#`, `d`, `d#`, `e`, `f`, `f#`, `g`, `g#`, `a`, `a#`, `b`. Comments (lines starting with `#`) and blank lines are ignored.
+
+Example `scale1.txt` (C Major scale):
+```
+# Major scale
+c
+d
+e
+f
+g
+a
+b
 ```
 
 ### Processing Flow
@@ -61,7 +79,14 @@ For each voice file, the vocoder:
 
 1. **MIDI Processing**: Synthesizes each MIDI file into a carrier wave and vocodes with the voice
 2. **Synth Wave Processing**: Loads each pre-generated synth wave file and vocodes with the voice
-3. **Whisper Generation**: Creates a stereo whisper track by vocoding the voice with white noise
+3. **Pitch Correction**: Detects pitch from the voice and snaps to a user-defined scale, synthesizes a carrier wave, and vocodes with the voice
+4. **Whisper Generation**: Creates a stereo whisper track by vocoding the voice with white noise
+
+**Pitch Correction Details:**
+- Analyzes the voice for dominant frequencies in the range 50-2000 Hz
+- Snaps detected pitches to a defined musical scale (octave-independent)
+- Uses a noise gate (-40 dB by default) to prevent unwanted tuning during silence or low-amplitude content
+- Maintains the last detected note when below the noise gate threshold
 
 ### Output Structure
 
@@ -74,6 +99,8 @@ output/
 ├── voice1_synth1.wav        # Voice + Synth wave 1
 ├── voice1_synth2.wav
 ├── voice1_synth3.wav
+├── voice1_scale1.wav        # Voice + Pitch-corrected carrier (scale 1)
+├── voice1_scale2.wav        # Voice + Pitch-corrected carrier (scale 2)
 └── voice1_whisper.wav       # Stereo whisper track
 ```
 
@@ -101,5 +128,7 @@ The vocoder works in 4 steps:
 - `clean_audio.py`: Audio preprocessing and validation
 - `config.py`: Global configuration parameters
 - `midi_synth.py`: MIDI to audio synthesis
+- `pitch_corrector.py`: Pitch detection and scale-based note snapping
+- `scale_synth.py`: Pitch-corrected carrier synthesis
 - `noise_generators.py`: Noise generation utilities
 - `buffers.py`: Buffer management utilities
