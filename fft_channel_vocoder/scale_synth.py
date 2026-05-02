@@ -1,19 +1,21 @@
 import numpy as np
-from .config import sample_rate, fft_size
+from .config import sample_rate
 from .pitch_corrector import PitchCorrector, midi_note_to_frequency
 from .buffers import Carrier_Buffer
 from . import clean_audio
 
-hop_size = 2 ** fft_size // 4
+window_size = 2 ** 13
+hop_size = window_size // 8
 
 
-def build_note_schedule_from_frames(frames_and_notes, hop_size, sample_rate):
+def build_note_schedule_from_frames(frames_and_notes, hop_size, sample_rate, total_duration_seconds):
     """Convert frame-by-frame notes into a continuous note schedule.
 
     Args:
         frames_and_notes: List of (frame_index, note_class, octave) tuples.
         hop_size: Samples between frame boundaries.
         sample_rate: Sample rate in Hz.
+        total_duration_seconds: Total duration of audio in seconds.
 
     Returns:
         List of {"note_class": str, "octave": int, "start": float, "end": float}.
@@ -43,7 +45,7 @@ def build_note_schedule_from_frames(frames_and_notes, hop_size, sample_rate):
 
     if current_note_data is not None:
         start_time = start_frame * hop_size / sample_rate
-        end_time = len(frames_and_notes) * hop_size / sample_rate
+        end_time = total_duration_seconds
         schedule.append({
             "note_class": current_note_data[0],
             "octave": current_note_data[1],
@@ -61,19 +63,23 @@ def note_class_and_octave_to_frequency(note_class, octave):
     return midi_note_to_frequency(midi_note)
 
 
-def synthesize_pitch_corrected_carrier(voice_data, scale_notes, noise_gate_threshold_db=-40):
+def synthesize_pitch_corrected_carrier(voice_data, scale_notes, noise_gate_threshold_db=-40,
+                                       min_frequency=50, max_frequency=500):
     """Synthesize carrier wave by detecting pitch from voice and snapping to scale.
 
     Args:
         voice_data: Voice audio as 1D numpy array.
         scale_notes: List of note class strings (e.g., ["c", "d", "e"]).
         noise_gate_threshold_db: Noise gate threshold in dB (default -40).
+        min_frequency: Minimum frequency to detect (Hz, default 50).
+        max_frequency: Maximum frequency to detect (Hz, default 500).
 
     Returns:
         Carrier wave as 1D numpy array, same length as voice_data.
     """
     print("Initializing pitch corrector")
-    corrector = PitchCorrector(scale_notes, noise_gate_threshold_db)
+    corrector = PitchCorrector(scale_notes, noise_gate_threshold_db,
+                               min_frequency=min_frequency, max_frequency=max_frequency)
     corrector.update_peak(voice_data)
 
     total_duration = len(voice_data) / sample_rate
@@ -83,7 +89,7 @@ def synthesize_pitch_corrected_carrier(voice_data, scale_notes, noise_gate_thres
     frame_idx = 0
 
     for start_sample in range(0, len(voice_data), hop_size):
-        end_sample = min(start_sample + hop_size, len(voice_data))
+        end_sample = min(start_sample + window_size, len(voice_data))
         frame = voice_data[start_sample:end_sample]
 
         result = corrector.process_frame(frame)
@@ -93,7 +99,7 @@ def synthesize_pitch_corrected_carrier(voice_data, scale_notes, noise_gate_thres
 
         frame_idx += 1
 
-    schedule = build_note_schedule_from_frames(frames_and_notes, hop_size, sample_rate)
+    schedule = build_note_schedule_from_frames(frames_and_notes, hop_size, sample_rate, total_duration)
 
     print(f"Detected {len(schedule)} note regions")
     print("Building carrier buffer")

@@ -35,21 +35,38 @@ def files_exist(path, name, extension):
         i += 1
 
 def load_scale(scale_file):
-    """Load scale notes from a text file.
+    """Load scale notes and parameters from a text file.
 
     Args:
         scale_file: Path to scale file.
 
     Returns:
-        List of note class strings (e.g., ["c", "d", "e"]).
+        Tuple of (notes_list, parameters_dict) where parameters_dict contains
+        optional min_freq and max_freq (Hz). Returns defaults for missing params.
     """
     notes = []
+    params = {'min_freq': 50, 'max_freq': 500}
+
     with open(scale_file, 'r') as file:
         for line in file:
             line = line.strip()
-            if line and not line.startswith('#'):
+            if not line or line.startswith('#'):
+                continue
+
+            if '=' in line:
+                key, value = line.split('=', 1)
+                key = key.strip().lower()
+                try:
+                    if key == 'min_freq':
+                        params['min_freq'] = float(value.strip())
+                    elif key == 'max_freq':
+                        params['max_freq'] = float(value.strip())
+                except ValueError:
+                    pass
+            else:
                 notes.append(line.lower())
-    return notes
+
+    return notes, params
 
 
 def whisper(data):
@@ -91,10 +108,12 @@ def main():
         # Get all scale files for pitch correction
         for scale_file, scale_name in files_exist(input_path, "scale", "txt"):
             print(f"Loading scale from {scale_file.name}")
-            scale_notes = load_scale(scale_file)
+            scale_notes, scale_params = load_scale(scale_file)
             print("Detecting pitch and correcting to scale")
             carrier_data = scale_synth.synthesize_pitch_corrected_carrier(
-                voice_data, scale_notes, noise_gate_threshold_db=-40
+                voice_data, scale_notes, noise_gate_threshold_db=-40,
+                min_frequency=scale_params['min_freq'],
+                max_frequency=scale_params['max_freq']
             )
             print("Applying vocoder")
             output_data = fft.vocode(voice_data, carrier_data)

@@ -309,6 +309,85 @@ mv output output_hq
 # Compare output_fast and output_hq
 ```
 
+## Scale File Configuration
+
+Scale files (placed in `input/scale1.txt`, `input/scale2.txt`, etc.) define the musical notes for pitch correction. They can also include optional frequency range parameters to reduce false pitch detections.
+
+### Basic Format
+
+Each line contains a note name (case-insensitive):
+
+```
+c
+d
+e
+g
+a
+```
+
+This defines a C major scale. Comments start with `#`:
+
+```
+# C Major Scale
+c
+d
+e
+g
+a
+
+# Optional: specify frequency ranges
+min_freq=80
+max_freq=400
+```
+
+### Frequency Range Parameters
+
+To reduce false positives from sibilants (S, T sounds) and very high notes, you can specify:
+
+- **`min_freq=number`** — Minimum frequency to detect in Hz (default: 50)
+- **`max_freq=number`** — Maximum frequency to detect in Hz (default: 500)
+
+**Example: Eliminating sibilant artifacts**
+
+```
+# Female vocal scale
+c
+d
+e
+f
+g
+a
+b
+
+# Restrict to avoid sibilant false positives (S, T at 5000+ Hz)
+min_freq=120
+max_freq=800
+```
+
+**Example: Male vocal with lower range**
+
+```
+# Male vocal scale
+a
+b
+c
+d
+e
+f
+g
+
+# Male voices typically lower
+min_freq=60
+max_freq=400
+```
+
+**Frequency range guidelines**:
+
+- **Very high notes false positives?** Lower `max_freq` (try 300-600)
+- **S/T sounds detected as pitch?** Raise `min_freq` (try 80-200)
+- **Quiet sections becoming silent?** Lower `min_freq` (try 30-80)
+- **Need more aggressive filtering?** Use narrower range (e.g., `min_freq=150, max_freq=350`)
+
 ## Troubleshooting Configuration
 
 **"Settings don't seem to change"**
@@ -330,6 +409,12 @@ mv output output_hq
 - Try larger `fft_size_power` (13 or 14) for better formant capture
 - Ensure input voice files aren't clipped
 - See [Troubleshooting](07-troubleshooting.md)
+
+**"Getting false pitch detections from S/T sounds"**
+- Add `min_freq=150` and `max_freq=500` to your scale file
+- Increase `min_freq` (try 200+) if sibilants still trigger false positives
+- Decrease `max_freq` if random high notes are detected
+- See [Scale File Configuration](#scale-file-configuration) above
 
 ---
 

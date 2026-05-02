@@ -29,8 +29,13 @@ class Carrier_Buffer:
             end_seconds: End time of the note in seconds.
             frequency: Pitch in Hz. Pass 0 or negative to write white noise.
         """
+        # Safety check:
+        # Check if start is less than duration, and
+        # end is capped to the length if end_seconds is longer than duration.
         start = int(round(start_seconds * sample_rate))
-        end = int(round(end_seconds * sample_rate))
+        if start > self.total_samples:
+            raise ValueError("Start must be before duration")
+        end = min(int(round(end_seconds * sample_rate)), self.total_samples)
         n = end - start
         if n <= 0:
             return

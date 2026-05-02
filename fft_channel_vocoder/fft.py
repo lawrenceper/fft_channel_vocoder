@@ -42,6 +42,65 @@ def get_stft(voice, carrier):
     return (voice_mag, carrier_mag, carrier_phase)
 
 
+def calculate_frequency_dependent_sigma(normalized_frequency):
+    """Calculate sigma for a frequency using logarithmic scaling.
+
+    Maps linear frequency to log space. Lower frequencies get higher sigma
+    (removes pitch), higher frequencies get lower sigma (preserves detail).
+
+    Args:
+        normalized_frequency: Value from 0 (lowest freq) to 1 (highest freq).
+
+    Returns:
+        Sigma value for Gaussian smoothing.
+    """
+    sigma_low = 6.0
+    sigma_high = 1.5
+    # Map to log space: higher normalized_frequency = exponentially higher perceived pitch
+    log_frequency = np.log1p(normalized_frequency * 10) / np.log1p(10)
+    sigma = sigma_low + (sigma_high - sigma_low) * log_frequency
+    return sigma
+
+
+def apply_frequency_dependent_smoothing(magnitude_spectrum):
+    """Smooth magnitude spectrum with smooth logarithmic sigma scaling.
+
+    Applies a continuous curve of sigma values across the spectrum:
+    low frequencies get aggressive smoothing (removes pitch leakage),
+    high frequencies get light smoothing (preserves vocal character).
+
+    Args:
+        magnitude_spectrum: 2D numpy array of STFT magnitudes (frequency x time).
+
+    Returns:
+        2D numpy array of smoothed magnitudes.
+    """
+    num_frequency_bins = magnitude_spectrum.shape[0]
+    smoothed = np.zeros_like(magnitude_spectrum)
+
+    # Use many overlapping bands to create a smooth continuous transition
+    num_bands = 15
+    band_size = max(1, num_frequency_bins // num_bands)
+
+    for band_idx in range(num_bands):
+        start = band_idx * band_size
+        end = min((band_idx + 1) * band_size, num_frequency_bins)
+        if end <= start:
+            break
+
+        # Calculate center frequency of this band and get appropriate sigma
+        band_center = (start + end) / 2
+        normalized_frequency = band_center / num_frequency_bins
+        sigma = calculate_frequency_dependent_sigma(normalized_frequency)
+
+        # Smooth this band with its calculated sigma
+        smoothed[start:end, :] = gaussian_filter1d(
+            magnitude_spectrum[start:end, :], sigma=sigma, axis=0
+        )
+
+    return smoothed
+
+
 def process_fft(voice_mag, carrier_mag):
     """Apply spectral envelope transfer from voice to carrier.
 
@@ -56,21 +115,16 @@ def process_fft(voice_mag, carrier_mag):
         2D numpy array of output magnitudes with the voice's spectral shape
         imposed on the carrier.
     """
-    # 2. Spectral Smoothing (This replaces the 40-filter bank)
-    # We blur the voice magnitude across the frequency bins
-
-    # sigma=4 or 8 blurs the bins enough to capture 'formants' but not 'pitch'
-    sigma = 8
-    voice_env = gaussian_filter1d(voice_mag, sigma=sigma, axis=0)
-    carrier_env = gaussian_filter1d(carrier_mag, sigma=sigma, axis=0)
+    # 2. Spectral Smoothing with frequency-dependent sigma
+    # Lower frequencies get more smoothing (removes pitch leakage)
+    # Higher frequencies get less smoothing (preserves vocal character)
+    voice_env = apply_frequency_dependent_smoothing(voice_mag)
+    carrier_env = apply_frequency_dependent_smoothing(carrier_mag)
 
     # 3. Apply: (Synth / Synth_Env) * Voice_Env
     # The (carrier_mag / carrier_env) part is 'Spectral Whitening'
-    # white here means whitening
-    # env means the envelope follower
     carrier_white = carrier_mag / (carrier_env + 1e-6)
     output_mag = carrier_white * voice_env
-    # I changed Y_mag here to output_mag for better consistency and beginner-friendly understanding
     return output_mag
 
 
