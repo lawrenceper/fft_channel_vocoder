@@ -1,5 +1,7 @@
 # FFT Channel Vocoder
 
+> **Built by a blind programmer and musician, for musicians**
+
 A Python package that applies spectral envelope transfer using FFT-based processing. The vocoder takes a modulator (voice) signal and imposes its spectral envelope onto a carrier signal.
 
 Designed with accessibility as a core principle: CLI first, no GUI, cross-platform, automated batch processing—built by a blind developer for everyone who deserves equal access to audio tools.
@@ -120,6 +122,12 @@ The vocoder works in 4 steps:
 3. **Envelope Transfer**: Apply spectral whitening to the carrier, then scale by voice envelope
 4. **Reconstruction**: Inverse STFT with original carrier phase to recover time-domain signal
 
+## Demonstration
+
+Hear the FFT Vocoder in action:
+
+**[FFT Vocoder Demo Video](https://www.youtube.com/watch?v=-T7fRM0AHqs)** — Original voice, vocoded track, and vocoded track with music + code displayed on screen
+
 ## Module Reference
 
 - `main.py`: Core pipeline and file iteration
@@ -132,3 +140,7 @@ The vocoder works in 4 steps:
 - `scale_synth.py`: Pitch-corrected carrier synthesis
 - `noise_generators.py`: Noise generation utilities
 - `buffers.py`: Buffer management utilities
+
+## Disclaimer
+
+This project was developed with AI-assisted development. While some parts of the code were built with AI assistance, the program ideas, architecture, and design philosophy are original.
