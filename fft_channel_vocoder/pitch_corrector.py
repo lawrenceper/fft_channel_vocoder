@@ -96,7 +96,7 @@ def determine_best_octave(frequency, note_class):
     distances = [
         abs(midi_note_detected - midi_with_below),
         abs(midi_note_detected - midi_note_with_octave),
-        abs(midi_note_detected - midi_with_above)
+        abs(midi_note_detected - midi_with_above),
     ]
 
     best_octave_idx = np.argmin(distances)
@@ -159,7 +159,7 @@ def detect_pitch(audio_frame, min_frequency=50, max_frequency=500):
 
     autocorr = compute_fft_autocorrelation(audio_frame)
 
-    search_range = autocorr[min_period:max_period + 1]
+    search_range = autocorr[min_period : max_period + 1]
     if len(search_range) == 0:
         return (0, 0, 0)
 
@@ -177,8 +177,14 @@ def detect_pitch(audio_frame, min_frequency=50, max_frequency=500):
 class PitchCorrector:
     """Detects pitch from audio and corrects to a musical scale."""
 
-    def __init__(self, scale_notes, noise_gate_threshold_db=-20, harmonic_strength_threshold=0.3,
-                 min_frequency=50, max_frequency=500):
+    def __init__(
+        self,
+        scale_notes,
+        noise_gate_threshold_db=-20,
+        harmonic_strength_threshold=0.3,
+        min_frequency=50,
+        max_frequency=500,
+    ):
         """Initialize pitch corrector.
 
         Args:
@@ -209,15 +215,17 @@ class PitchCorrector:
         Returns:
             Tuple of (note_class, octave) or None if below noise gate or harmonic threshold.
         """
-        rms = np.sqrt(np.mean(audio_frame ** 2))
+        rms = np.sqrt(np.mean(audio_frame**2))
         amplitude_db = 20 * np.log10(rms / self.peak_amplitude + 1e-10)
 
         if amplitude_db < self.noise_gate_threshold_db:
             return self.last_note
 
-        frequency, confidence, harmonic_strength = detect_pitch(audio_frame,
-                                                                min_frequency=self.min_frequency,
-                                                                max_frequency=self.max_frequency)
+        frequency, confidence, harmonic_strength = detect_pitch(
+            audio_frame,
+            min_frequency=self.min_frequency,
+            max_frequency=self.max_frequency,
+        )
 
         if confidence < 0.1:
             return self.last_note

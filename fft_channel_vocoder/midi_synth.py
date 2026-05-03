@@ -6,7 +6,6 @@ from . import clean_audio
 from .buffers import Carrier_Buffer
 
 
-
 def midi_note_to_frequency(note_number):
     """Convert MIDI note number to frequency in Hz."""
     return 440.0 * (2.0 ** ((note_number - 69) / 12.0))
@@ -90,9 +89,7 @@ def generate_notes_layer(schedule, total_duration, carrier_buffer):
 
     for note in schedule:
         carrier_buffer.add_wave(
-            note["start"],
-            note["end"],
-            midi_note_to_frequency(note["note"])
+            note["start"], note["end"], midi_note_to_frequency(note["note"])
         )
 
 

@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="fft_channel_vocoder",
-    version="0.1.0",
+    version="1.0.0",
     description="FFT-based channel vocoder that applies spectral envelope transfer",
     author="Your Name",
     packages=find_packages(),

@@ -11,6 +11,7 @@ from . import midi_synth
 from . import scale_synth
 from .noise_generators import white_noise
 
+
 def files_exist(path, name, extension):
     """
     Generator that iterates through all possible files that exist
@@ -34,6 +35,7 @@ def files_exist(path, name, extension):
         yield (filepath, f"{name}{i if i else ''}")
         i += 1
 
+
 def load_scale(scale_file):
     """Load scale notes and parameters from a text file.
 
@@ -45,22 +47,22 @@ def load_scale(scale_file):
         optional min_freq and max_freq (Hz). Returns defaults for missing params.
     """
     notes = []
-    params = {'min_freq': 50, 'max_freq': 500}
+    params = {"min_freq": 50, "max_freq": 500}
 
-    with open(scale_file, 'r') as file:
+    with open(scale_file, "r") as file:
         for line in file:
             line = line.strip()
-            if not line or line.startswith('#'):
+            if not line or line.startswith("#"):
                 continue
 
-            if '=' in line:
-                key, value = line.split('=', 1)
+            if "=" in line:
+                key, value = line.split("=", 1)
                 key = key.strip().lower()
                 try:
-                    if key == 'min_freq':
-                        params['min_freq'] = float(value.strip())
-                    elif key == 'max_freq':
-                        params['max_freq'] = float(value.strip())
+                    if key == "min_freq":
+                        params["min_freq"] = float(value.strip())
+                    elif key == "max_freq":
+                        params["max_freq"] = float(value.strip())
                 except ValueError:
                     pass
             else:
@@ -75,7 +77,6 @@ def whisper(data):
     """
     noise = white_noise(len(data))
     return fft.vocode(data, noise)
-
 
 
 def main():
@@ -111,9 +112,11 @@ def main():
             scale_notes, scale_params = load_scale(scale_file)
             print("Detecting pitch and correcting to scale")
             carrier_data = scale_synth.synthesize_pitch_corrected_carrier(
-                voice_data, scale_notes, noise_gate_threshold_db=-40,
-                min_frequency=scale_params['min_freq'],
-                max_frequency=scale_params['max_freq']
+                voice_data,
+                scale_notes,
+                noise_gate_threshold_db=-40,
+                min_frequency=scale_params["min_freq"],
+                max_frequency=scale_params["max_freq"],
             )
             print("Applying vocoder")
             output_data = fft.vocode(voice_data, carrier_data)
@@ -122,8 +125,7 @@ def main():
         # Generate whisper track and save
         print("Generating stereo whisper track")
         stereo_whisper = clean_audio.make_stereo(
-            whisper(voice_data),
-            whisper(voice_data)
+            whisper(voice_data), whisper(voice_data)
         )
         print("Saving stereo pair")
         clean_io.save(output_path / f"{voice_name}_whisper.wav", stereo_whisper)

@@ -7,6 +7,7 @@ from . import clean_audio
 import numpy as np
 from scipy.io import wavfile
 
+
 def does_exist(filename):
     """Check whether a file exists on disk.
 
@@ -21,6 +22,7 @@ def does_exist(filename):
             return True
     except:
         return False
+
 
 def load(filename):
     """Load a WAV file and return a cleaned mono float32 array.
@@ -40,6 +42,7 @@ def load(filename):
     # Clean audio
     return clean_audio.clean(audio, file_sample_rate)
 
+
 def save(filename, audio):
     """Clean and write audio to a WAV file at the project sample rate.
 
@@ -52,4 +55,3 @@ def save(filename, audio):
 
     # Save to file
     wavfile.write(filename, sample_rate, new_audio.astype(np.float32))
-

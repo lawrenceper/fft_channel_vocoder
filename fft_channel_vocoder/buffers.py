@@ -46,7 +46,6 @@ class Carrier_Buffer:
             # Append a wave with the frequency
             self.carrier[start:end] += self.sawtooth_wave(frequency, n)
 
-
     def sawtooth_wave(self, frequency, num_samples):
         """Generate a sawtooth wave at the given frequency.
 
@@ -63,8 +62,6 @@ class Carrier_Buffer:
         waveform = 2.0 * phase - 1.0
         return waveform.astype(np.float32)
 
-
     def white_noise(self, num_samples):
         """Generate white noise."""
         return np.random.uniform(-1.0, 1.0, num_samples).astype(np.float32)
-

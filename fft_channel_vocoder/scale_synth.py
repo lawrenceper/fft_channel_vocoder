@@ -4,11 +4,13 @@ from .pitch_corrector import PitchCorrector, midi_note_to_frequency
 from .buffers import Carrier_Buffer
 from . import clean_audio
 
-window_size = 2 ** 13
+window_size = 2**13
 hop_size = window_size // 8
 
 
-def build_note_schedule_from_frames(frames_and_notes, hop_size, sample_rate, total_duration_seconds):
+def build_note_schedule_from_frames(
+    frames_and_notes, hop_size, sample_rate, total_duration_seconds
+):
     """Convert frame-by-frame notes into a continuous note schedule.
 
     Args:
@@ -34,37 +36,59 @@ def build_note_schedule_from_frames(frames_and_notes, hop_size, sample_rate, tot
         elif (note_class, octave) != current_note_data:
             start_time = start_frame * hop_size / sample_rate
             end_time = frame_idx * hop_size / sample_rate
-            schedule.append({
-                "note_class": current_note_data[0],
-                "octave": current_note_data[1],
-                "start": start_time,
-                "end": end_time
-            })
+            schedule.append(
+                {
+                    "note_class": current_note_data[0],
+                    "octave": current_note_data[1],
+                    "start": start_time,
+                    "end": end_time,
+                }
+            )
             current_note_data = (note_class, octave)
             start_frame = frame_idx
 
     if current_note_data is not None:
         start_time = start_frame * hop_size / sample_rate
         end_time = total_duration_seconds
-        schedule.append({
-            "note_class": current_note_data[0],
-            "octave": current_note_data[1],
-            "start": start_time,
-            "end": end_time
-        })
+        schedule.append(
+            {
+                "note_class": current_note_data[0],
+                "octave": current_note_data[1],
+                "start": start_time,
+                "end": end_time,
+            }
+        )
 
     return schedule
 
 
 def note_class_and_octave_to_frequency(note_class, octave):
     """Convert note class and octave to frequency in Hz."""
-    note_index = ["c", "c#", "d", "d#", "e", "f", "f#", "g", "g#", "a", "a#", "b"].index(note_class.lower())
+    note_index = [
+        "c",
+        "c#",
+        "d",
+        "d#",
+        "e",
+        "f",
+        "f#",
+        "g",
+        "g#",
+        "a",
+        "a#",
+        "b",
+    ].index(note_class.lower())
     midi_note = octave * 12 + note_index
     return midi_note_to_frequency(midi_note)
 
 
-def synthesize_pitch_corrected_carrier(voice_data, scale_notes, noise_gate_threshold_db=-40,
-                                       min_frequency=50, max_frequency=500):
+def synthesize_pitch_corrected_carrier(
+    voice_data,
+    scale_notes,
+    noise_gate_threshold_db=-40,
+    min_frequency=50,
+    max_frequency=500,
+):
     """Synthesize carrier wave by detecting pitch from voice and snapping to scale.
 
     Args:
@@ -78,8 +102,12 @@ def synthesize_pitch_corrected_carrier(voice_data, scale_notes, noise_gate_thres
         Carrier wave as 1D numpy array, same length as voice_data.
     """
     print("Initializing pitch corrector")
-    corrector = PitchCorrector(scale_notes, noise_gate_threshold_db,
-                               min_frequency=min_frequency, max_frequency=max_frequency)
+    corrector = PitchCorrector(
+        scale_notes,
+        noise_gate_threshold_db,
+        min_frequency=min_frequency,
+        max_frequency=max_frequency,
+    )
     corrector.update_peak(voice_data)
 
     total_duration = len(voice_data) / sample_rate
@@ -99,7 +127,9 @@ def synthesize_pitch_corrected_carrier(voice_data, scale_notes, noise_gate_thres
 
         frame_idx += 1
 
-    schedule = build_note_schedule_from_frames(frames_and_notes, hop_size, sample_rate, total_duration)
+    schedule = build_note_schedule_from_frames(
+        frames_and_notes, hop_size, sample_rate, total_duration
+    )
 
     print(f"Detected {len(schedule)} note regions")
     print("Building carrier buffer")
@@ -108,8 +138,7 @@ def synthesize_pitch_corrected_carrier(voice_data, scale_notes, noise_gate_thres
 
     for note_info in schedule:
         frequency = note_class_and_octave_to_frequency(
-            note_info["note_class"],
-            note_info["octave"]
+            note_info["note_class"], note_info["octave"]
         )
         carrier_buffer.add_wave(note_info["start"], note_info["end"], frequency)
 

@@ -6,6 +6,14 @@ A Python package that applies spectral envelope transfer using FFT-based process
 
 Designed with accessibility as a core principle: CLI first, no GUI, cross-platform, automated batch processing—built by a blind developer for everyone who deserves equal access to audio tools.
 
+🔥🔥🔥🔥🔥 Now on PyPI!!! `pip install fft_channel_vocoder` 🔥🔥🔥🔥🔥
+
+## Demonstration
+
+Hear the FFT Vocoder in action:
+
+**[FFT Vocoder Demo Video](https://www.youtube.com/watch?v=-T7fRM0AHqs)** — Original voice, vocoded track, and vocoded track with music + code displayed on screen
+
 ## Documentation
 
 - 📚 **[Documentation](docs/index.md)** — Installation, tutorials, configuration, and troubleshooting
@@ -22,8 +30,17 @@ Designed with accessibility as a core principle: CLI first, no GUI, cross-platfo
 - **Accessibility First**: CLI interface, fully accessible to screen readers, works across platforms
 
 ## Installation
+### From Python Package Index (PyPI)
+
+Easy Peezy! Run this in your terminal:
+
+```bash
+pip install fft_channel_vocoder
+```
 
 ### From source
+
+Clone the repo or download the source code:
 ```bash
 cd fft_channel_vocoder
 pip install -e .
@@ -121,12 +138,6 @@ The vocoder works in 4 steps:
 2. **Spectral Smoothing**: Apply Gaussian blur to extract formant envelopes
 3. **Envelope Transfer**: Apply spectral whitening to the carrier, then scale by voice envelope
 4. **Reconstruction**: Inverse STFT with original carrier phase to recover time-domain signal
-
-## Demonstration
-
-Hear the FFT Vocoder in action:
-
-**[FFT Vocoder Demo Video](https://www.youtube.com/watch?v=-T7fRM0AHqs)** — Original voice, vocoded track, and vocoded track with music + code displayed on screen
 
 ## Module Reference
 

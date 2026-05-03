@@ -5,6 +5,7 @@
 
 # Source of truth
 from .config import sample_rate
+
 # import other libraries
 import numpy as np
 from math import gcd
@@ -18,19 +19,20 @@ def make_stereo(left, right):
     """
     # Validate both arrays using your check function
     # Ensuring skip_mono_check is False as requested
-    audio_check(left,skip_mono_check=False)
+    audio_check(left, skip_mono_check=False)
     audio_check(right, skip_mono_check=False)
-    
+
     # Check if they are the same length before stacking
     if left.shape != right.shape:
-        raise ValueError(f"Arrays must have the same shape. Got {a.shape} and {b.shape}")
+        raise ValueError(
+            f"Arrays must have the same shape. Got {a.shape} and {b.shape}"
+        )
 
     # Stack arrays along a new axis to create (samples, 2)
     # np.stack(..., axis=-1) is standard for interleaved stereo
     stereo_audio = np.column_stack((left, right))
-    
-    return stereo_audio
 
+    return stereo_audio
 
 
 def resample(audio, current_sample_rate):
@@ -52,6 +54,7 @@ def resample(audio, current_sample_rate):
     down = current_sample_rate // greatest_common_divisor
     return resample_poly(audio, up, down)
 
+
 def make_mono(audio):
     """Convert a multi-channel audio array to mono by averaging channels.
 
@@ -65,6 +68,7 @@ def make_mono(audio):
         return np.mean(audio, axis=1)
     else:
         return audio
+
 
 def convert_float32(audio):
     """Convert an audio array to float32.
@@ -82,6 +86,7 @@ def convert_float32(audio):
         return audio.astype(np.float32) / 32768.0
     return audio.astype(np.float32)
 
+
 def normalise(audio):
     """Normalise audio so the peak absolute value is 1.0.
 
@@ -95,7 +100,9 @@ def normalise(audio):
     norm_factor = np.max(np.abs(audio)) + 1e-9
     return audio / norm_factor
 
+
 # Safety check - ensure audio is valid before processing
+
 
 def audio_check(audio, skip_mono_check=True):
     """Validate that audio is a non-empty numpy array.
@@ -116,6 +123,7 @@ def audio_check(audio, skip_mono_check=True):
 
     if len(audio) == 0:
         raise ValueError("Empty audio passed to vocoder")
+
 
 def clean(audio, current_sample_rate=None, skip_mono_conversion=False):
     """Normalise and prepare an audio array for processing or saving.
@@ -138,13 +146,15 @@ def clean(audio, current_sample_rate=None, skip_mono_conversion=False):
     audio_check(audio)
     # If the synth returned an empty list or array, stop here
     if audio is None or len(audio) == 0:
-        print("Warning: Received empty audio buffer in clean(). Returning silent array.")
-        return np.zeros(1024, dtype=np.float32) # Return a small slice of silence
+        print(
+            "Warning: Received empty audio buffer in clean(). Returning silent array."
+        )
+        return np.zeros(1024, dtype=np.float32)  # Return a small slice of silence
 
     # Change the sample rate if file_sample_rate is supplied
     print("Fixing audio.")
     if current_sample_rate is not None and current_sample_rate != sample_rate:
-        new_audio = resample(audio, current_sample_rate) # Avoid forshadowing
+        new_audio = resample(audio, current_sample_rate)  # Avoid forshadowing
     else:
         new_audio = audio
     # Make the track Mono
