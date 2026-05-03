@@ -15,4 +15,4 @@ dependencies = [
 ]
 
 [project.scripts]
-"vocode=fft_channel_vocoder.cli:cli"
+vocode = "fft_channel_vocoder.cli:cli"
