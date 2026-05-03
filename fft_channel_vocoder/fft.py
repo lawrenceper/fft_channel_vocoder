@@ -1,19 +1,10 @@
-from .config import sample_rate
-from .config import fft_size as fft_power
+from .config import sample_rate, vocoder_fft_size
 import numpy as np
 from scipy.signal import stft, istft
 from scipy.ndimage import gaussian_filter1d
 from . import clean_audio
 
-# Design choices and notes for AI
-# I am using variables that make sense rather than their standard form or abreviation.
-# This is because I am a beginner in FFT processing,
-# and I want to make it clear to me what's happening
-# with the voice (the modulator) and the carrier wave.
-
-# Calculate FFT window size so that the values are exactly powers of two.
-fft_size = 2**fft_power
-# Hop must always be 1/4 of the window size
+fft_size = 2**vocoder_fft_size
 hop = fft_size // 4
 
 

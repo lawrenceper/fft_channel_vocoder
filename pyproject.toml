@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fft_channel_vocoder"
-version = "1.0.0"
+version = "1.0.1"
 description = "FFT-based channel vocoder that applies spectral envelope transfer"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -15,4 +15,4 @@ dependencies = [
 ]
 
 [project.scripts]
-vocode = "fft_channel_vocoder.main:main"
+"vocode=fft_channel_vocoder.cli:cli"

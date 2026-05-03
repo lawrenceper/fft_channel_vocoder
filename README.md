@@ -30,18 +30,27 @@ Hear the FFT Vocoder in action:
 - **Accessibility First**: CLI interface, fully accessible to screen readers, works across platforms
 
 ## Installation
+
 ### From Python Package Index (PyPI)
 
-Easy Peezy! Run this in your terminal:
+The easiest way to install is from PyPI:
 
 ```bash
 pip install fft_channel_vocoder
 ```
 
-### From source
+Then run the vocoder with:
 
-Clone the repo or download the source code:
 ```bash
+vocode
+```
+
+### From Source
+
+Clone the repo and install in development mode:
+
+```bash
+git clone https://github.com/your-repo/fft_channel_vocoder.git
 cd fft_channel_vocoder
 pip install -e .
 ```
@@ -50,12 +59,28 @@ pip install -e .
 
 ### Command Line
 
-Run the vocoder via the `vocode` command:
+Run the vocoder with files in the input folder:
+
 ```bash
 vocode
 ```
 
-Or using Python module syntax:
+Show help and usage information:
+
+```bash
+vocode -h
+vocode --help
+```
+
+Open the configuration menu to adjust settings:
+
+```bash
+vocode -c
+vocode --config
+```
+
+Or run using Python module syntax:
+
 ```bash
 python3 -m fft_channel_vocoder
 ```
@@ -125,10 +150,19 @@ output/
 
 ## Configuration
 
-Edit `fft_channel_vocoder/config.py` to adjust:
+Configuration is stored in `fft_channel_vocoder/config.json`. You can edit it directly or use the configuration menu:
 
-- `sample_rate`: Default 96,000 Hz
-- `fft_size`: FFT window power (2^12 = 4096 samples)
+```bash
+vocode -c
+```
+
+### Configuration Options
+
+- `sample_rate`: Audio sample rate in Hz (default: 96,000)
+- `vocoder_fft_size`: FFT window size as a power of 2 (default: 12, which equals 2^12 = 4096 samples)
+- `vocoder_hop`: Hop size divisor for vocoder FFTs (default: 4, calculates as fft_size / 4)
+- `pitch_correct_fft_size`: FFT size for pitch correction as a power of 2 (default: 11, which equals 2^11 = 2048 samples)
+- `pitch_correcter_hop`: Hop size divisor for pitch correction FFTs (default: 4)
 
 ## Algorithm
 
