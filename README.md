@@ -6,7 +6,7 @@ A Python package that applies spectral envelope transfer using FFT-based process
 
 Designed with accessibility as a core principle: CLI first, no GUI, cross-platform, automated batch processing—built by a blind developer for everyone who deserves equal access to audio tools.
 
-🔥🔥🔥🔥🔥 Now on PyPI!!! `pip install fft_channel_vocoder` 🔥🔥🔥🔥🔥
+Now on PyPI: `pip install fft_channel_vocoder`
 
 ## Demonstration
 
@@ -16,9 +16,9 @@ Hear the FFT Vocoder in action:
 
 ## Documentation
 
-- 📚 **[Documentation](docs/index.md)** — Installation, tutorials, configuration, and troubleshooting
-- 🎨 **[Design Philosophy](design/design.md)** — Why we built it this way, design decisions, and algorithm choices
-- ⚙️ **[Algorithm Deep Dive](design/algorithm.md)** — Technical details for audio engineers and researchers
+- **[Documentation](docs/index.md)** — Installation, tutorials, configuration, and troubleshooting
+- **[Design Philosophy](design/design.md)** — Why we built it this way, design decisions, and algorithm choices
+- **[Algorithm Deep Dive](design/algorithm.md)** — Technical details for audio engineers and researchers
 
 ## Features
 
@@ -91,15 +91,15 @@ The vocoder expects files organized in an `input/` directory:
 
 ```
 input/
-├── voice1.wav          # Modulator signals
-├── voice2.wav
-├── melody1.mid         # MIDI files to synthesize as carrier
-├── melody2.mid
-├── synth1.wav          # Pre-generated synth wave files as carrier
-├── synth2.wav
-├── synth3.wav
-├── scale1.txt          # Scale files for pitch correction (one note per line)
-└── scale2.txt
+    voice1.wav          # Modulator signals
+    voice2.wav
+    melody1.mid         # MIDI files to synthesize as carrier
+    melody2.mid
+    synth1.wav          # Pre-generated synth wave files as carrier
+    synth2.wav
+    synth3.wav
+    scale1.txt          # Scale files for pitch correction (one note per line)
+    scale2.txt
 ```
 
 **Scale File Format:**
@@ -138,14 +138,14 @@ Processed files are saved to `output/`:
 
 ```
 output/
-├── voice1_melody1.wav       # Voice + MIDI synthesis
-├── voice1_melody2.wav
-├── voice1_synth1.wav        # Voice + Synth wave 1
-├── voice1_synth2.wav
-├── voice1_synth3.wav
-├── voice1_scale1.wav        # Voice + Pitch-corrected carrier (scale 1)
-├── voice1_scale2.wav        # Voice + Pitch-corrected carrier (scale 2)
-└── voice1_whisper.wav       # Stereo whisper track
+    voice1_melody1.wav       # Voice + MIDI synthesis
+    voice1_melody2.wav
+    voice1_synth1.wav        # Voice + Synth wave 1
+    voice1_synth2.wav
+    voice1_synth3.wav
+    voice1_scale1.wav        # Voice + Pitch-corrected carrier (scale 1)
+    voice1_scale2.wav        # Voice + Pitch-corrected carrier (scale 2)
+    voice1_whisper.wav       # Stereo whisper track
 ```
 
 ## Configuration

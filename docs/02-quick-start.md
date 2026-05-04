@@ -16,9 +16,9 @@ Create a folder called `input` in your project directory:
 
 ```
 input/
-├── voice1.wav          # Your voice file
-├── melody.mid          # A MIDI file (optional)
-└── synth.wav           # A synth wave file (optional)
+    voice1.wav          # Your voice file
+    melody.mid          # A MIDI file (optional)
+    synth.wav           # A synth wave file (optional)
 ```
 
 ### Where to Get Sample Files
@@ -48,9 +48,9 @@ Your processed files appear in the `output/` folder:
 
 ```
 output/
-├── voice1_melody.wav       # Voice applied to melody
-├── voice1_synth.wav        # Voice applied to synth
-└── voice1_whisper.wav      # Voice applied to white noise
+    voice1_melody.wav       # Voice applied to melody
+    voice1_synth.wav        # Voice applied to synth
+    voice1_whisper.wav      # Voice applied to white noise
 ```
 
 Open any file in your DAW or audio player to hear the results!

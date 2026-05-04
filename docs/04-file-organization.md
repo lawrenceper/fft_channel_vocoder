@@ -8,15 +8,15 @@ The vocoder requires an `input/` folder in your working directory:
 
 ```
 your-project/
-├── input/
-│   ├── voice1.wav
-│   ├── voice2.wav
-│   ├── melody1.mid
-│   ├── melody2.mid
-│   ├── synth1.wav
-│   └── synth2.wav
-└── output/
-    └── (automatically created)
+    input/
+        voice1.wav
+        voice2.wav
+        melody1.mid
+        melody2.mid
+        synth1.wav
+        synth2.wav
+    output/
+        (automatically created)
 ```
 
 ## File Types Supported
@@ -42,10 +42,10 @@ Requirements:
 Example:
 ```
 input/
-├── vocal_female.wav
-├── vocal_male.wav
-├── speech_english.wav
-└── laughter.wav
+    vocal_female.wav
+    vocal_male.wav
+    speech_english.wav
+    laughter.wav
 ```
 
 ### MIDI Files (Carriers)
@@ -70,10 +70,10 @@ Requirements:
 Example:
 ```
 input/
-├── melody1.mid
-├── arpeggio1.mid
-├── bass_line.mid
-└── chord_progression.mid
+    melody1.mid
+    arpeggio1.mid
+    bass_line.mid
+    chord_progression.mid
 ```
 
 ### Synth Wave Files (Carriers)
@@ -96,11 +96,11 @@ Requirements:
 Example:
 ```
 input/
-├── saw_wave.wav
-├── sine_wave.wav
-├── square_wave.wav
-├── noise_pink.wav
-└── pad_synth.wav
+    saw_wave.wav
+    sine_wave.wav
+    square_wave.wav
+    noise_pink.wav
+    pad_synth.wav
 ```
 
 ## Naming Conventions
@@ -116,17 +116,17 @@ Output files follow the pattern: `{voice_name}_{carrier_name}.wav`
 **Input files**:
 ```
 input/
-├── voice1.wav          # Voice
-├── melody1.mid         # MIDI
-├── synth1.wav          # Synth wave
+    voice1.wav          # Voice
+    melody1.mid         # MIDI
+    synth1.wav          # Synth wave
 ```
 
 **Output files**:
 ```
 output/
-├── voice1_melody1.wav     # voice1 + melody1
-├── voice1_synth1.wav      # voice1 + synth1
-└── voice1_whisper.wav     # voice1 + white noise (automatic)
+    voice1_melody1.wav     # voice1 + melody1
+    voice1_synth1.wav      # voice1 + synth1
+    voice1_whisper.wav     # voice1 + white noise (automatic)
 ```
 
 ### Best Practices
@@ -138,16 +138,16 @@ output/
 
 Good naming:
 ```
-✓ vocal_female_bright.wav
-✓ melody_pop_32bars.mid
-✓ synth_lead_aggressive.wav
+vocal_female_bright.wav
+melody_pop_32bars.mid
+synth_lead_aggressive.wav
 ```
 
-Bad naming:
+Avoid:
 ```
-✗ voice (1).wav
-✗ melodyyy!!!.mid
-✗ 随音频.wav (non-ASCII)
+voice (1).wav
+melodyyy!!!.mid
+audio-file-with-non-ASCII-characters.wav
 ```
 
 ## Organizing Multiple Projects
@@ -156,23 +156,21 @@ Bad naming:
 
 ```
 vocoder-projects/
-├── project-1-pop-song/
-│   ├── input/
-│   │   ├── vocal.wav
-│   │   ├── melody.mid
-│   │   └── bass.mid
-│   └── output/
-│
-├── project-2-experimental/
-│   ├── input/
-│   │   ├── speech.wav
-│   │   ├── synth1.wav
-│   │   └── synth2.wav
-│   └── output/
-│
-└── project-3-batch-test/
-    ├── input/
-    └── output/
+    project-1-pop-song/
+        input/
+            vocal.wav
+            melody.mid
+            bass.mid
+        output/
+    project-2-experimental/
+        input/
+            speech.wav
+            synth1.wav
+            synth2.wav
+        output/
+    project-3-batch-test/
+        input/
+        output/
 ```
 
 ### Running Multiple Projects
@@ -213,9 +211,9 @@ The vocoder processes each voice with all carriers:
 
 ```
 input/
-├── voice1.wav      →  voice1_melody1.wav
-├── voice2.wav      →  voice2_melody1.wav
-├── melody1.mid
+    voice1.wav      produces  voice1_melody1.wav
+    voice2.wav      produces  voice2_melody1.wav
+    melody1.mid
 ```
 
 ### Stereo Voice Files

@@ -22,15 +22,15 @@ The vocoder automatically processes all files in the `input/` folder:
 
 ```
 input/
-├── voice_male_1.wav
-├── voice_male_2.wav
-├── voice_male_3.wav
-├── melody_1.mid
-├── melody_2.mid
-├── melody_3.mid
-├── synth_lead.wav
-├── synth_bass.wav
-└── synth_pad.wav
+    voice_male_1.wav
+    voice_male_2.wav
+    voice_male_3.wav
+    melody_1.mid
+    melody_2.mid
+    melody_3.mid
+    synth_lead.wav
+    synth_bass.wav
+    synth_pad.wav
 ```
 
 Running `vocode` processes:
@@ -47,17 +47,17 @@ For large batches, organize hierarchically:
 
 ```
 batch-project/
-├── input/
-│   ├── vocals/
-│   │   ├── singer_1.wav
-│   │   └── singer_2.wav
-│   ├── midi/
-│   │   ├── melody.mid
-│   │   └── bass.mid
-│   └── synth/
-│       └── pad.wav
-├── output/
-└── log.txt (your notes)
+    input/
+        vocals/
+            singer_1.wav
+            singer_2.wav
+        midi/
+            melody.mid
+            bass.mid
+        synth/
+            pad.wav
+    output/
+    log.txt (your notes)
 ```
 
 **Note**: The vocoder expects files directly in `input/`, not subdirectories. For organizing batches:
@@ -263,28 +263,60 @@ save_audio("output/vocoded_normal.wav", output_normal, sr=sr)
 
 ### Workflow 3: Batch with Quality Levels
 
-Process the same files at different quality settings:
+Process the same files at different quality settings using the configurator:
 
 ```bash
 #!/bin/bash
 
+# Function to update config using the configurator
+update_config() {
+    local sample_rate=$1
+    local fft_size=$2
+    python3 -c "
+import json
+from pathlib import Path
+
+config_file = Path('fft_channel_vocoder/config.json')
+config = json.loads(config_file.read_text())
+config['sample_rate'] = $sample_rate
+config['vocoder_fft_size'] = $fft_size
+config_file.write_text(json.dumps(config, indent=2))
+"
+}
+
 # Fast version
-sed -i 's/sample_rate = .*/sample_rate = 44100/' config.py
-sed -i 's/fft_size_power = .*/fft_size_power = 10/' config.py
+update_config 44100 10
 vocode
 mv output output_fast
 
 # Standard version
-sed -i 's/sample_rate = .*/sample_rate = 96000/' config.py
-sed -i 's/fft_size_power = .*/fft_size_power = 12/' config.py
-pip install -e . > /dev/null
+update_config 96000 12
 vocode
 mv output output_standard
 
 # High quality version
-sed -i 's/sample_rate = .*/sample_rate = 96000/' config.py
-sed -i 's/fft_size_power = .*/fft_size_power = 13/' config.py
-pip install -e . > /dev/null
+update_config 96000 13
+vocode
+mv output output_hq
+```
+
+**Or manually between runs**:
+```bash
+# Fast version
+vocode --config
+# Select 1, enter 44100, select 2, enter 10, select 6 to save
+vocode
+mv output output_fast
+
+# Standard version
+vocode --config
+# Select 1, enter 96000, select 2, enter 12, select 6 to save
+vocode
+mv output output_standard
+
+# High quality version
+vocode --config
+# Select 1, enter 96000, select 2, enter 13, select 6 to save
 vocode
 mv output output_hq
 ```
@@ -296,8 +328,8 @@ mv output output_hq
 ### Ableton Live Workflow
 
 1. **Export stems** from your project
-   - Voice to `input/voice.wav`
-   - Synth/MIDI to `input/synth.wav` (synthesize MIDI first)
+   - Export voice to `input/voice.wav`
+   - Export synth/MIDI to `input/synth.wav` (synthesize MIDI first)
 
 2. **Run vocoder**
    ```bash
@@ -311,8 +343,8 @@ mv output output_hq
 ### Logic Pro Workflow
 
 1. **Export audio files** from your arrangement:
-   - Voice → `input/voice.wav`
-   - Synth → `input/synth.wav`
+   - Export voice to `input/voice.wav`
+   - Export synth to `input/synth.wav`
 
 2. **Run vocoder**
    ```bash
@@ -320,7 +352,7 @@ mv output output_hq
    ```
 
 3. **Import in Logic**:
-   - File → Import → Audio File
+   - Go to File, then Import, then Audio File
    - Select `output/voice_synth.wav`
 
 ### Reaper Workflow

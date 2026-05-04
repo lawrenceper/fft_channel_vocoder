@@ -25,7 +25,7 @@ brew install python3
 #### Windows
 1. Download Python from https://www.python.org/downloads/
 2. Run the installer
-3. ✅ **IMPORTANT**: Check "Add Python to PATH"
+3. **IMPORTANT**: Check "Add Python to PATH"
 4. Click Install Now
 
 #### Linux
@@ -52,7 +52,13 @@ You should see version numbers like `Python 3.9.0` and `pip 21.0.1`.
 
 ## Installation Steps
 
-### Option A: Install from Source (Recommended for Development)
+### Option A: Install from PyPI
+
+```bash
+pip3 install fft_channel_vocoder
+```
+
+### Option B: Install from Source (for Development)
 
 1. **Download or clone the repository**
    ```bash
@@ -67,12 +73,6 @@ You should see version numbers like `Python 3.9.0` and `pip 21.0.1`.
    ```bash
    pip3 install -e .
    ```
-
-### Option B: Install from PyPI (Once Released)
-
-```bash
-pip3 install fft_channel_vocoder
-```
 
 ## Verify Installation
 
@@ -127,7 +127,7 @@ pip3 install -e . --user
 
 ## Next Steps
 
-✅ Installation complete! Now:
+Installation complete! Now:
 - Read the [Quick Start Guide](02-quick-start.md) to process your first audio
 - Check [File Organization](04-file-organization.md) to prepare your audio files
 - See [Understanding the Vocoder](03-understanding.md) to learn the concepts

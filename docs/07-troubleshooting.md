@@ -71,10 +71,10 @@ pip3 install -e .
 **Problem**: The vocoder can't find your audio files
 
 **Checklist**:
-1. ✓ Is the folder named exactly `input/`? (lowercase, not `Input/` or `INPUTS/`)
-2. ✓ Does it exist in the same directory where you run `vocode`?
-3. ✓ Are files in the `input/` folder directly, not in subfolders?
-4. ✓ Are files named with correct extensions?
+1. Is the folder named exactly `input/`? (lowercase, not `Input/` or `INPUTS/`)
+2. Does it exist in the same directory where you run `vocode`?
+3. Are files in the `input/` folder directly, not in subfolders?
+4. Are files named with correct extensions?
    - Voice files: `.wav` (lowercase)
    - MIDI files: `.mid` (lowercase)
    - Synth files: `.wav` (lowercase)
@@ -82,11 +82,11 @@ pip3 install -e .
 **Correct structure**:
 ```
 your-project/
-├── input/
-│   ├── voice.wav
-│   ├── melody.mid
-│   └── synth.wav
-└── (run vocode here)
+    input/
+        voice.wav
+        melody.mid
+        synth.wav
+    (run vocode here)
 ```
 
 **Try this**:
@@ -155,7 +155,7 @@ vocode
 **Common causes**:
 
 1. **Input voice file is too quiet**
-   - Voice signal too low → no spectral envelope extracted
+   - Voice signal too low means no spectral envelope is extracted
    - Solution: Normalize before processing
    ```bash
    ffmpeg -i input.wav -af "loudnorm=I=-23:TP=-1.5" output.wav
@@ -220,8 +220,9 @@ ffplay input/synth.wav
    ```
 
 2. **Increase FFT size** (see [Configuration Guide](05-configuration.md)):
-   ```python
-   fft_size_power = 13  # Instead of 12
+   ```bash
+   vocode --config
+   # Select option 2, enter 13 (instead of 12)
    ```
 
 3. **Reduce input amplitude** in your DAW
@@ -241,9 +242,10 @@ ffplay input/synth.wav
 
 1. Use a clearer voice file (avoid whispers, heavy noise)
 
-2. Try smaller FFT size:
-   ```python
-   fft_size_power = 11  # Instead of 12
+2. Try smaller FFT size using the configurator:
+   ```bash
+   vocode --config
+   # Select option 2, enter 11 (instead of 12)
    ```
 
 3. Check voice file quality:
@@ -261,9 +263,10 @@ ffplay input/synth.wav
 **This is usually normal** — slight phase artifacts are expected due to FFT nature.
 
 **If problematic**:
-1. Use larger FFT size:
-   ```python
-   fft_size_power = 13  # Better phase preservation
+1. Use larger FFT size via the configurator:
+   ```bash
+   vocode --config
+   # Select option 2, enter 13 (for better phase preservation)
    ```
 
 2. Blend with original carrier (see [Advanced Usage](06-advanced-usage.md)):
@@ -293,14 +296,16 @@ ffplay input/synth.wav
    top -b -n 1 | head -20
    ```
 
-2. **Reduce FFT size**:
-   ```python
-   fft_size_power = 11  # Faster, less accurate
+2. **Reduce FFT size** using the configurator:
+   ```bash
+   vocode --config
+   # Select option 2, enter 11 (faster, less accurate)
    ```
 
-3. **Lower sample rate**:
-   ```python
-   sample_rate = 44100  # Faster, lower quality
+3. **Lower sample rate** using the configurator:
+   ```bash
+   vocode --config
+   # Select option 1, enter 44100 (faster, lower quality)
    ```
 
 4. **Process shorter files** for testing
@@ -328,14 +333,16 @@ ffplay input/synth.wav
    - Split audio into 5-10 minute segments
    - Process separately
 
-3. **Lower FFT size**:
-   ```python
-   fft_size_power = 10  # Uses less memory
+3. **Lower FFT size** using the configurator:
+   ```bash
+   vocode --config
+   # Select option 2, enter 10 (uses less memory)
    ```
 
-4. **Lower sample rate**:
-   ```python
-   sample_rate = 44100  # Uses less memory
+4. **Lower sample rate** using the configurator:
+   ```bash
+   vocode --config
+   # Select option 1, enter 44100 (uses less memory)
    ```
 
 ---
@@ -361,7 +368,7 @@ ffplay input/synth.wav
 **Try this**:
 ```bash
 # Re-export the MIDI from your DAW
-# File → Export → MIDI
+# File, then Export, then MIDI
 # Save as: melody.mid
 ```
 
@@ -402,39 +409,44 @@ ffplay input/synth.wav
    ```
 
 3. **Supported formats**:
-   - ✓ WAV (16-bit, 24-bit, 32-bit float)
-   - ✓ MIDI (Type 0 and Type 1)
-   - ✗ MP3 (convert to WAV first)
-   - ✗ AAC/M4A (convert to WAV first)
+   - Supported: WAV (16-bit, 24-bit, 32-bit float)
+   - Supported: MIDI (Type 0 and Type 1)
+   - Not supported: MP3 (convert to WAV first)
+   - Not supported: AAC/M4A (convert to WAV first)
 
 ---
 
 ## Configuration Issues
 
-### "Changes to config.py don't take effect"
+### "Changes to configuration don't take effect"
 
-**Problem**: You edited `config.py` but settings don't change
+**Problem**: You changed settings but they don't apply to your processing
 
 **Solutions**:
 
-1. **Reinstall to reload**:
+1. **Use the configurator** (recommended):
    ```bash
-   pip3 install -e . --force-reinstall --no-deps
+   vocode --config
+   # Make your changes and select 6 to save and exit
    vocode
    ```
 
-2. **Check you edited the right file**:
+2. **If editing config.json directly**:
+   - Verify the file was saved: `cat fft_channel_vocoder/config.json`
+   - Check for valid JSON syntax (commas, quotes, brackets)
+   - Settings take effect immediately on next `vocode` run
+
+3. **Verify your changes were saved**:
    ```bash
-   cat fft_channel_vocoder/config.py
-   # Should show your edits
+   cat fft_channel_vocoder/config.json
+   # Should show your updated values
    ```
 
-3. **Make sure you saved**:
-   - In your editor: Ctrl+S (or Cmd+S on Mac)
-
-4. **Verify syntax is valid**:
-   - Python is sensitive to spacing
-   - Keep format like: `sample_rate = 96000`
+4. **Restart processing**:
+   ```bash
+   vocode
+   # Should use your new settings
+   ```
 
 ---
 

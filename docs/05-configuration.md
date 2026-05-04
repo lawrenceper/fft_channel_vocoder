@@ -1,323 +1,88 @@
 # Configuration Guide
 
-Learn how to customize the vocoder's settings for your specific needs.
+Settings are stored in `fft_channel_vocoder/config.json`. This file is created automatically on first run with sensible defaults.
 
-## Overview
+## Settings
 
-Configuration is stored in `fft_channel_vocoder/config.py`. This guide explains each setting and how to adjust them.
+### sample_rate
 
-## Accessing Configuration
+The number of audio samples per second. Higher values capture more detail but take longer to process and produce larger files.
 
-### Current Configuration File
+- 44100 — Standard CD quality, fastest processing
+- 48000 — Standard for video and film
+- 96000 — High resolution, good for music production
+- 192000 — Mastering quality, slowest processing
 
-Located at: `fft_channel_vocoder/config.py`
+Default is 44100.
 
-Example:
-```python
-sample_rate = 96000  # Hz
-fft_size_power = 12  # 2^12 = 4096
-```
+### vocoder_fft_size
 
-## Main Settings
+The window size used for frequency analysis, entered as a power of 2. The actual window size is 2 raised to this number. For example, a value of 12 means a window of 4096 samples.
 
-### Sample Rate
+A larger value gives more precise frequency detail but reacts more slowly to changes in the voice. A smaller value reacts faster but captures less frequency detail.
 
-**What it is**: Audio resolution (samples per second)
+- 10 — 1024 samples, fast testing
+- 11 — 2048 samples
+- 12 — 4096 samples, default, good balance
+- 13 — 8192 samples, better formant capture
+- 14 — 16384 samples, detailed analysis, slowest
 
-**Current setting**:
-```python
-sample_rate = 96000  # Hz (96 kHz)
-```
+### vocoder_hop
 
-**Available options**:
-- `44100` — Standard CD quality (smaller files, faster)
-- `48000` — Standard for video/film
-- `96000` — High resolution (default, better quality)
-- `192000` — Mastering quality (largest files, slowest)
+Controls how much the analysis window advances between each step, as a divisor of the FFT size. A value of 4 means the window moves forward by one quarter of the FFT size each step.
 
-**How it affects your audio**:
-- Higher = Better high-frequency capture, clearer formants, larger files
-- Lower = Faster processing, smaller files, less detail
+Higher values mean more overlap between windows, which produces smoother output but takes longer. Lower values are faster but less smooth.
 
-**For different use cases**:
-```python
-# Streaming / Fast testing
-sample_rate = 44100
+- 1 — Largest steps, fastest, least smooth
+- 4 — Default, recommended for most uses
+- 8 — Smallest steps, smoothest, slowest
 
-# Professional mixing
-sample_rate = 96000
+### pitch_correct_fft_size
 
-# Mastering / Research
-sample_rate = 192000
-```
+Same as `vocoder_fft_size` but for the pitch correction step. You can adjust this independently from the vocoder. Uses the same power-of-2 values.
 
-**Memory usage**:
-- 1 minute at 44.1 kHz: ~5 MB
-- 1 minute at 96 kHz: ~11 MB
-- 1 minute at 192 kHz: ~23 MB
+### pitch_correcter_hop
 
-### FFT Size
+Same as `vocoder_hop` but for the pitch correction step.
 
-**What it is**: Window size for frequency analysis (power of 2)
+## Opening the Configurator
 
-**Current setting**:
-```python
-fft_size_power = 12  # 2^12 = 4096 samples
-```
-
-**Understanding the power**:
-- `2^10` = 1024 samples
-- `2^11` = 2048 samples
-- `2^12` = 4096 samples (default)
-- `2^13` = 8192 samples
-- `2^14` = 16384 samples
-
-**Frequency resolution** (how precise formant detection is):
-
-At 96 kHz sample rate:
-- `fft_size_power = 10` (1024): ~94 Hz per bin (poor)
-- `fft_size_power = 11` (2048): ~47 Hz per bin (okay)
-- `fft_size_power = 12` (4096): ~23 Hz per bin (good) ← default
-- `fft_size_power = 13` (8192): ~12 Hz per bin (excellent)
-- `fft_size_power = 14` (16384): ~6 Hz per bin (very fine)
-
-**Time resolution** (how quickly changes are detected):
-
-At 96 kHz sample rate:
-- `fft_size_power = 12` (4096): ~43 ms (good for speech)
-- `fft_size_power = 13` (8192): ~85 ms (slower)
-- `fft_size_power = 14` (16384): ~170 ms (very slow)
-
-**Trade-off**:
-- **Larger FFT** → Better frequency precision, worse time resolution
-- **Smaller FFT** → Worse frequency precision, better time resolution
-
-**Recommendations by use case**:
-
-```python
-# Fast testing / Real-time requirements
-fft_size_power = 10  # 1024 samples
-
-# General music production (default)
-fft_size_power = 12  # 4096 samples
-
-# High-quality formant preservation
-fft_size_power = 13  # 8192 samples
-
-# Research / Detailed analysis
-fft_size_power = 14  # 16384 samples
-```
-
-**Performance impact**:
-- Doubling FFT size roughly doubles processing time
-- Doubling FFT size roughly halves files sizes (with same sample rate)
-
-## How to Change Settings
-
-### Method 1: Edit config.py Directly
-
-1. Open `fft_channel_vocoder/config.py` in a text editor
-2. Modify the values:
-   ```python
-   sample_rate = 96000
-   fft_size_power = 12
-   ```
-3. Save the file
-4. Run the vocoder: `vocode`
-
-**Example: High-quality settings**
-```python
-# For best formant capture (slower processing)
-sample_rate = 96000
-fft_size_power = 13
-```
-
-**Example: Fast testing**
-```python
-# For quick experiments (less quality)
-sample_rate = 44100
-fft_size_power = 10
-```
-
-### Method 2: Environment Variables (Future)
-
-For future versions, you may be able to set:
-```bash
-export VOCODER_SAMPLE_RATE=48000
-export VOCODER_FFT_SIZE=11
-vocode
-```
-
-(Check if supported in your version)
-
-## Configuration Profiles
-
-Create different configuration files for different workflows:
-
-### Setup
-
-Create a copy of config.py for each use case:
+The easiest way to change settings is the built-in interactive configurator. Run:
 
 ```bash
-cp fft_channel_vocoder/config.py fft_channel_vocoder/config_fast.py
-cp fft_channel_vocoder/config.py fft_channel_vocoder/config_hq.py
+vocode --config
 ```
 
-### Fast Profile (testing)
-
-`config_fast.py`:
-```python
-sample_rate = 44100      # Quick processing
-fft_size_power = 10      # Small FFT
-```
-
-### High-Quality Profile (production)
-
-`config_hq.py`:
-```python
-sample_rate = 96000      # High resolution
-fft_size_power = 13      # Large FFT for detail
-```
-
-Then in your code (advanced):
-```python
-# Load custom config
-import importlib.util
-spec = importlib.util.spec_from_file_location("config", "config_hq.py")
-config = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(config)
-```
-
-## Recommended Settings by Use Case
-
-### Music Production
-
-```python
-sample_rate = 96000       # Professional quality
-fft_size_power = 12       # Good frequency resolution
-```
-
-**Processing**: 1-2 minutes per audio minute
-
-### Real-Time / Live Performance
-
-```python
-sample_rate = 48000       # Fast processing
-fft_size_power = 10       # Smaller window
-```
-
-**Processing**: Near real-time (depends on audio length)
-
-### Research / Analysis
-
-```python
-sample_rate = 192000      # Maximum detail
-fft_size_power = 14       # Fine frequency analysis
-```
-
-**Processing**: 3-5x slower, best results
-
-### Streaming / Previews
-
-```python
-sample_rate = 44100       # Compact files
-fft_size_power = 10       # Fast processing
-```
-
-**Processing**: Very fast, adequate quality
-
-## Advanced Settings (Technical)
-
-These are derived from the two main settings — usually don't change:
-
-### Hop Size
-
-Calculated automatically as: `fft_size / 4`
-
-- At fft_size_power = 12: hop_size = 1024
-- At fft_size_power = 13: hop_size = 2048
-
-Larger = fewer overlaps = faster but less smooth
-Smaller = more overlaps = slower but smoother
-
-### Window Function
-
-Currently uses **Hann window** for smooth analysis. This is optimal for most cases.
-
-## Performance Tuning
-
-### For Faster Processing
-
-1. Lower `sample_rate` to 44100
-2. Lower `fft_size_power` to 10 or 11
-3. Trim long silences from input files
-
-**Example fast config**:
-```python
-sample_rate = 44100
-fft_size_power = 10
-```
-
-### For Better Quality
-
-1. Raise `sample_rate` to 96000 or 192000
-2. Raise `fft_size_power` to 13 or 14
-3. Use longer input files (more context for formant extraction)
-
-**Example quality config**:
-```python
-sample_rate = 96000
-fft_size_power = 13
-```
-
-## Testing Your Configuration
-
-### Quick Test
-
-1. Set new configuration
-2. Run on a short (5-10 second) audio file
-3. Check the output
-4. Adjust and repeat
-
-**Sample test command**:
-```bash
-# Change config.py
-vocode
-
-# Listen to output/
-# Not happy? Edit config.py again and vocode
-```
-
-### Before/After Comparison
-
-Process the same input with different configurations:
+Or use the short form:
 
 ```bash
-# Fast version
-# Edit config.py to fast settings
-vocode
-mv output output_fast
-
-# Reinstall to reload config
-pip install -e .
-
-# HQ version
-# Edit config.py to HQ settings
-vocode
-mv output output_hq
-
-# Compare output_fast and output_hq
+vocode -c
 ```
 
-## Scale File Configuration
+The menu lists all current settings and lets you pick one to change by number. After making changes, select the exit option to save. Settings take effect on the next run of `vocode`.
 
-Scale files (placed in `input/scale1.txt`, `input/scale2.txt`, etc.) define the musical notes for pitch correction. They can also include optional frequency range parameters to reduce false pitch detections.
+## Editing config.json Directly
 
-### Basic Format
+Advanced users can open `fft_channel_vocoder/config.json` in any text editor. The file looks like this:
 
-Each line contains a note name (case-insensitive):
+```json
+{
+  "sample_rate": 44100,
+  "vocoder_fft_size": 12,
+  "vocoder_hop": 4,
+  "pitch_correct_fft_size": 12,
+  "pitch_correcter_hop": 4
+}
+```
+
+Change any value and save the file. The next run of `vocode` will use the new settings.
+
+## Scale File Format
+
+Scale files live in the `input/` folder as `scale1.txt`, `scale2.txt`, and so on. Each line is a note name. Lines starting with `#` are comments.
 
 ```
+# C major pentatonic
 c
 d
 e
@@ -325,99 +90,17 @@ g
 a
 ```
 
-This defines a C major scale. Comments start with `#`:
+You can add optional frequency range limits to reduce false pitch detections from sibilant sounds like S and T:
 
 ```
-# C Major Scale
-c
-d
-e
-g
-a
-
-# Optional: specify frequency ranges
 min_freq=80
 max_freq=400
 ```
 
-### Frequency Range Parameters
-
-To reduce false positives from sibilants (S, T sounds) and very high notes, you can specify:
-
-- **`min_freq=number`** — Minimum frequency to detect in Hz (default: 50)
-- **`max_freq=number`** — Maximum frequency to detect in Hz (default: 500)
-
-**Example: Eliminating sibilant artifacts**
-
-```
-# Female vocal scale
-c
-d
-e
-f
-g
-a
-b
-
-# Restrict to avoid sibilant false positives (S, T at 5000+ Hz)
-min_freq=120
-max_freq=800
-```
-
-**Example: Male vocal with lower range**
-
-```
-# Male vocal scale
-a
-b
-c
-d
-e
-f
-g
-
-# Male voices typically lower
-min_freq=60
-max_freq=400
-```
-
-**Frequency range guidelines**:
-
-- **Very high notes false positives?** Lower `max_freq` (try 300-600)
-- **S/T sounds detected as pitch?** Raise `min_freq` (try 80-200)
-- **Quiet sections becoming silent?** Lower `min_freq` (try 30-80)
-- **Need more aggressive filtering?** Use narrower range (e.g., `min_freq=150, max_freq=350`)
-
-## Troubleshooting Configuration
-
-**"Settings don't seem to change"**
-- Make sure you saved `config.py`
-- If you installed with `pip install -e .`, the changes should be immediate
-- Try: `pip install -e . --force-reinstall` to reload
-
-**"Processing is too slow"**
-- Lower `sample_rate` to 44100
-- Lower `fft_size_power` to 11
-- Process shorter audio files for testing
-
-**"Quality is too low"**
-- Raise `sample_rate` to 96000 or higher
-- Raise `fft_size_power` to 13
-- Ensure input voice files are high quality
-
-**"Audio sounds robotic/artifacts"**
-- Try larger `fft_size_power` (13 or 14) for better formant capture
-- Ensure input voice files aren't clipped
-- See [Troubleshooting](07-troubleshooting.md)
-
-**"Getting false pitch detections from S/T sounds"**
-- Add `min_freq=150` and `max_freq=500` to your scale file
-- Increase `min_freq` (try 200+) if sibilants still trigger false positives
-- Decrease `max_freq` if random high notes are detected
-- See [Scale File Configuration](#scale-file-configuration) above
+If high notes or sibilants are being incorrectly detected as pitch, lower `max_freq`. If low-pitched sections are being missed, lower `min_freq`.
 
 ---
 
-**Want to understand the algorithm?** See [Algorithm Deep Dive](../design/algorithm.md).
+For help with file organization, see [File Organization](04-file-organization.md).
 
-**Need help with files?** Check [File Organization](04-file-organization.md).
+For algorithm details, see [Algorithm Deep Dive](../design/algorithm.md).
