@@ -3,7 +3,7 @@ from pathlib import Path
 
 config_file = Path(__file__).parent / "config.json"
 
-_DEFAULT_CONFIG = {
+DEFAULT_CONFIG = {
     "sample_rate": 96000,
     "vocoder_fft_size": 12,
     "vocoder_hop": 4,
@@ -15,8 +15,8 @@ _DEFAULT_CONFIG = {
 def _load_or_create_config():
     if not config_file.exists():
         with open(config_file, "w") as f:
-            json.dump(_DEFAULT_CONFIG, f, indent=2)
-        return _DEFAULT_CONFIG
+            json.dump(DEFAULT_CONFIG, f, indent=2)
+        return DEFAULT_CONFIG
 
     with open(config_file, "r") as f:
         return json.load(f)
