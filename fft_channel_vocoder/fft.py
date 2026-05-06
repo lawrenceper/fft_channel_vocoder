@@ -92,7 +92,7 @@ def apply_frequency_dependent_smoothing(magnitude_spectrum):
     return smoothed
 
 
-def apply_temporal_envelope(magnitude_spectrum, attack=0.003, release=0.005):
+def apply_temporal_envelope(magnitude_spectrum, attack_seconds=0.003, release_seconds=0.005):
     """Apply asymmetric attack/release smoothing across the time axis.
 
     For each frequency bin, energy is allowed to rise quickly (attack) and
@@ -101,19 +101,23 @@ def apply_temporal_envelope(magnitude_spectrum, attack=0.003, release=0.005):
 
     Args:
         magnitude_spectrum: 2D numpy array of STFT magnitudes (frequency x time).
-        attack: How quickly energy rises. Higher values react faster (0 to 1).
-        release: How quickly energy falls. Lower values decay slower (0 to 1).
+        attack_seconds: How quickly energy rises, in seconds (e.g. 0.003 = 3ms).
+        release_seconds: How quickly energy falls, in seconds (e.g. 0.005 = 5ms).
 
     Returns:
         2D numpy array of temporally smoothed magnitudes.
     """
+    frames_per_second = sample_rate / hop
+    attack_coefficient = 1.0 - np.exp(-1.0 / (attack_seconds * frames_per_second))
+    release_coefficient = 1.0 - np.exp(-1.0 / (release_seconds * frames_per_second))
+
     num_time_frames = magnitude_spectrum.shape[1]
     smoothed = np.zeros_like(magnitude_spectrum)
     previous = np.zeros(magnitude_spectrum.shape[0])
 
     for time_index in range(num_time_frames):
         current = magnitude_spectrum[:, time_index]
-        coefficient = np.where(current > previous, attack, release)
+        coefficient = np.where(current > previous, attack_coefficient, release_coefficient)
         previous = (1 - coefficient) * previous + coefficient * current
         smoothed[:, time_index] = previous
 
