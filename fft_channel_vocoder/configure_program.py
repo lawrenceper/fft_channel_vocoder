@@ -69,12 +69,12 @@ def edit_setting(config):
 
         elif choice == "3":
             try:
-                value = int(input("Enter vocoder hop divisor (1-8): ").strip())
-                if 1 <= value <= 8:
+                value = int(input("Enter vocoder hop divisor (1-16): ").strip())
+                if 1 <= value <= 16:
                     config["vocoder_hop"] = value
                     save_config(config)
                 else:
-                    print("Hop divisor should be between 1 and 8.")
+                    print("Hop divisor should be between 1 and 16.")
             except ValueError:
                 print("Invalid input. Please enter a number.")
 
@@ -95,12 +95,12 @@ def edit_setting(config):
 
         elif choice == "5":
             try:
-                value = int(input("Enter pitch correcter hop divisor (1-8): ").strip())
-                if 1 <= value <= 8:
+                value = int(input("Enter pitch correcter hop divisor (1-16): ").strip())
+                if 1 <= value <= 16:
                     config["pitch_correcter_hop"] = value
                     save_config(config)
                 else:
-                    print("Hop divisor should be between 1 and 8.")
+                    print("Hop divisor should be between 1 and 16.")
             except ValueError:
                 print("Invalid input. Please enter a number.")
 

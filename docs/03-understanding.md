@@ -44,21 +44,27 @@ These formants are what make vowels sound different. The vocoder preserves these
 
 ## How This Vocoder Works (High Level)
 
-### The 4-Step Process
+### The 5-Step Process
 
 1. **Analyze the voice** (STFT)
    - Convert voice to frequency domain using FFT
    - Captures formants and spectral characteristics
 
-2. **Smooth the spectrum** (Gaussian blur)
+2. **Smooth the spectrum across frequency** (Gaussian blur)
    - Extracts the envelope (formant shape)
-   - Removes fine details and noise
+   - Removes fine pitch details so only the broad vocal shape remains
+   - Low frequencies get stronger smoothing, high frequencies get lighter smoothing
 
-3. **Apply to carrier** (Spectral whitening + scaling)
+3. **Smooth the envelope across time** (Temporal attack/release)
+   - Allows energy to rise quickly (fast attack) to preserve sharp consonants like "t" and "k"
+   - Allows energy to fall slowly (slow release) to sustain vowels naturally
+   - This is what makes speech intelligible rather than washy or underwater-sounding
+
+4. **Apply to carrier** (Spectral whitening + scaling)
    - Whiten the carrier spectrum (flatten frequency response)
    - Scale by the voice envelope
 
-4. **Reconstruct audio** (Inverse STFT)
+5. **Reconstruct audio** (Inverse STFT)
    - Convert back to time domain
    - Preserve the carrier's original phase (sounds natural)
 

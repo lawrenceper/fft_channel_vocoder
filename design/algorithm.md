@@ -4,12 +4,13 @@ Technical details of the FFT vocoding algorithm for audio engineers and research
 
 ## Overview
 
-The FFT Channel Vocoder implements spectral envelope transfer using four main steps:
+The FFT Channel Vocoder implements spectral envelope transfer using five main steps:
 
 1. **STFT Analysis** — Compute frequency domain representation
-2. **Envelope Extraction** — Smooth spectrum to isolate formants
-3. **Spectral Transfer** — Apply voice envelope to carrier
-4. **STFT Synthesis** — Reconstruct time-domain audio
+2. **Envelope Extraction** — Smooth spectrum across frequency to isolate formants
+3. **Temporal Envelope** — Apply asymmetric attack/release smoothing across time
+4. **Spectral Transfer** — Apply voice envelope to carrier
+5. **STFT Synthesis** — Reconstruct time-domain audio
 
 ## 1. STFT Analysis
 
@@ -101,7 +102,54 @@ Voice envelope: Smooth curve showing formants (peaks)
                 F3 ≈ 2500 Hz
 ```
 
-## 3. Spectral Transfer
+## 3. Temporal Envelope (Attack/Release)
+
+### Why the Time Axis Matters
+
+Frequency smoothing removes pitch information, but it is symmetric: it treats rising energy and falling energy identically. Human speech is not symmetric. Consonants like "t", "k", and "p" are brief bursts of energy that must rise fast, while vowels like "a" and "o" decay slowly. Symmetric smoothing blurs both equally, which reduces intelligibility.
+
+### The Attack/Release Model
+
+After frequency smoothing, each frequency bin is further smoothed across time using two separate coefficients:
+
+```
+If energy is rising  → use attack coefficient (high = fast)
+If energy is falling → use release coefficient (low = slow)
+```
+
+This is a first-order IIR (Infinite Impulse Response) filter with asymmetric behavior:
+
+```
+smoothed[f, t] = (1 - coeff) * smoothed[f, t-1] + coeff * magnitude[f, t]
+
+where coeff = attack  if magnitude[f, t] > smoothed[f, t-1]
+              release  otherwise
+```
+
+### NumPy Vectorized Implementation
+
+The time loop is unavoidable because each frame depends on the previous one. However, the loop over frequency bins is eliminated by processing all bins simultaneously at each time step:
+
+```
+For each time frame t:
+    current[all_bins] = magnitude[:, t]
+    coefficient[all_bins] = where(current > previous, attack, release)
+    previous = (1 - coefficient) * previous + coefficient * current
+    smoothed[:, t] = previous
+```
+
+This reduces the total iteration count from `frequency_bins × time_frames` to just `time_frames`, with all frequency arithmetic done in fast NumPy C code.
+
+### Default Parameters
+
+- **attack** = 0.3 — rises to about 95% of a step in ~9 frames
+- **release** = 0.05 — falls to about 5% of a step in ~58 frames
+
+Tuning guidance:
+- Sound is clicky or harsh → lower the attack value (e.g. 0.1)
+- Sound is mushy or washy → raise the attack or lower the release
+
+## 4. Spectral Transfer
 
 ### Key Insight
 
@@ -169,7 +217,7 @@ Output[k,t] = |Output[k,t]| × e^(i*Carrier_phase[k,t])
               × e^(i*Carrier_phase[k,t])
 ```
 
-## 4. STFT Synthesis
+## 5. STFT Synthesis
 
 ### Inverse FFT
 
@@ -215,7 +263,7 @@ This means output sums to original amplitude.
 - Smooth transitions (Hann window overlap)
 - Artifact-free (mathematically sound)
 
-## 5. Complete Algorithm
+## 6. Complete Algorithm
 
 ### Pseudocode
 
@@ -244,6 +292,9 @@ def vocode(voice, carrier):
         
         carrier_mag = |carrier_stft[t]|
         carrier_env = gaussian_blur(carrier_mag)
+        
+        # Temporal envelope (attack/release across time)
+        voice_env = apply_temporal_envelope(voice_env)
         
         # Spectral transfer
         carrier_whitened = carrier_mag / (carrier_env + eps)
@@ -329,10 +380,11 @@ This is ideal for vowel formants which are typically:
 ### Strengths
 
 ✓ **Simple and efficient**: O(N log N) per frame using FFT
-✓ **Preserves intelligibility**: Formants remain clear
+✓ **Preserves intelligibility**: Formants remain clear, consonant transients preserved by attack/release
 ✓ **Natural sounding**: Uses carrier phase (no phasiness)
 ✓ **Flexible**: Works with any voice and carrier
 ✓ **Scalable**: Can handle long audio files
+✓ **Temporal dynamics**: Asymmetric attack/release captures speech's natural asymmetry in time
 
 ### Limitations
 
@@ -372,6 +424,7 @@ This is ideal for vowel formants which are typically:
 3. **Time warping**: Non-linear time alignment
 4. **Spectral morphing**: Blend between envelopes
 5. **Multi-band**: Separate processing per frequency range
+6. **Configurable attack/release**: Expose attack and release as user-facing configuration options
 
 ### Research Directions
 

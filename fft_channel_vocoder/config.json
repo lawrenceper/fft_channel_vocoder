@@ -1,0 +1,7 @@
+{
+  "sample_rate": 96000,
+  "vocoder_fft_size": 12,
+  "vocoder_hop": 16,
+  "pitch_correct_fft_size": 12,
+  "pitch_correcter_hop": 16
+}

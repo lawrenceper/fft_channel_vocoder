@@ -92,6 +92,34 @@ def apply_frequency_dependent_smoothing(magnitude_spectrum):
     return smoothed
 
 
+def apply_temporal_envelope(magnitude_spectrum, attack=0.003, release=0.005):
+    """Apply asymmetric attack/release smoothing across the time axis.
+
+    For each frequency bin, energy is allowed to rise quickly (attack) and
+    fall slowly (release). This preserves sharp consonant onsets while
+    sustaining vowels naturally, improving intelligibility.
+
+    Args:
+        magnitude_spectrum: 2D numpy array of STFT magnitudes (frequency x time).
+        attack: How quickly energy rises. Higher values react faster (0 to 1).
+        release: How quickly energy falls. Lower values decay slower (0 to 1).
+
+    Returns:
+        2D numpy array of temporally smoothed magnitudes.
+    """
+    num_time_frames = magnitude_spectrum.shape[1]
+    smoothed = np.zeros_like(magnitude_spectrum)
+    previous = np.zeros(magnitude_spectrum.shape[0])
+
+    for time_index in range(num_time_frames):
+        current = magnitude_spectrum[:, time_index]
+        coefficient = np.where(current > previous, attack, release)
+        previous = (1 - coefficient) * previous + coefficient * current
+        smoothed[:, time_index] = previous
+
+    return smoothed
+
+
 def process_fft(voice_mag, carrier_mag):
     """Apply spectral envelope transfer from voice to carrier.
 
@@ -112,7 +140,10 @@ def process_fft(voice_mag, carrier_mag):
     voice_env = apply_frequency_dependent_smoothing(voice_mag)
     carrier_env = apply_frequency_dependent_smoothing(carrier_mag)
 
-    # 3. Apply: (Synth / Synth_Env) * Voice_Env
+    # 3. Apply temporal attack/release to preserve consonant transients
+    voice_env = apply_temporal_envelope(voice_env)
+
+    # 4. Apply: (Synth / Synth_Env) * Voice_Env
     # The (carrier_mag / carrier_env) part is 'Spectral Whitening'
     carrier_white = carrier_mag / (carrier_env + 1e-6)
     output_mag = carrier_white * voice_env

@@ -166,12 +166,13 @@ vocode -c
 
 ## Algorithm
 
-The vocoder works in 4 steps:
+The vocoder works in 5 steps:
 
 1. **STFT Analysis**: Compute Short-Time Fourier Transform for both voice and carrier
-2. **Spectral Smoothing**: Apply Gaussian blur to extract formant envelopes
-3. **Envelope Transfer**: Apply spectral whitening to the carrier, then scale by voice envelope
-4. **Reconstruction**: Inverse STFT with original carrier phase to recover time-domain signal
+2. **Spectral Smoothing**: Apply frequency-dependent Gaussian blur to extract formant envelopes
+3. **Temporal Envelope**: Apply asymmetric attack/release smoothing across time to preserve consonant transients and sustain vowels naturally
+4. **Envelope Transfer**: Apply spectral whitening to the carrier, then scale by voice envelope
+5. **Reconstruction**: Inverse STFT with original carrier phase to recover time-domain signal
 
 ## Module Reference
 

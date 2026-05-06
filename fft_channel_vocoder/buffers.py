@@ -4,6 +4,7 @@
 
 import numpy as np
 from .config import sample_rate
+from .noise_generators import tremolo_noise, pulse_wave
 
 
 class Carrier_Buffer:
@@ -41,27 +42,7 @@ class Carrier_Buffer:
             return
         if frequency <= 0:
             # Add white noise
-            self.carrier[start:end] += self.white_noise(n)
+            self.carrier[start:end] += white_noise(n)
         else:
             # Append a wave with the frequency
-            self.carrier[start:end] += self.sawtooth_wave(frequency, n)
-
-    def sawtooth_wave(self, frequency, num_samples):
-        """Generate a sawtooth wave at the given frequency.
-
-        Args:
-            frequency: Pitch of the wave in Hz.
-            num_samples: Number of samples to generate.
-
-        Returns:
-            1D float32 numpy array of the sawtooth waveform in the range [-1, 1].
-        """
-        indices = np.arange(num_samples)
-        # Calculates phase from 0 to 1
-        phase = (frequency * indices / sample_rate) % 1.0
-        waveform = 2.0 * phase - 1.0
-        return waveform.astype(np.float32)
-
-    def white_noise(self, num_samples):
-        """Generate white noise."""
-        return np.random.uniform(-1.0, 1.0, num_samples).astype(np.float32)
+            self.carrier[start:end] += pulse_wave(frequency, n)

@@ -19,6 +19,97 @@ from .config import sample_rate
 import numpy as np
 
 
+
+def tremolo_noise(frequency: float,
+                  duration_samples: int,
+                  attack: float,
+                  hold: float,
+                  release: float) -> np.ndarray:
+    """
+    Generate white noise with a tremolo envelope applied.
+
+    Parameters
+    ----------
+    sample_rate      : int   – samples per second (e.g. 44100)
+    frequency        : float – tremolo LFO frequency in Hz (e.g. 4.0)
+    duration_samples : int   – total length of the output in samples
+    attack           : float – percentage of duration spent fading in  (0–100)
+    hold             : float – percentage of duration at full amplitude (0–100)
+    release          : float – percentage of duration spent fading out (0–100)
+
+    Returns
+    -------
+    np.ndarray (float32, shape [duration_samples]) in the range [-1, 1].
+
+    Notes
+    -----
+    * attack + hold + release must be <= 100.  Any remaining tail is silence.
+    * The tremolo LFO is a half-rectified sine that swings the amplitude
+      from 0 (complete silence) to 1 (full volume) at `frequency` Hz.
+    * The macro envelope (attack / hold / release) is applied on top so the
+      overall amplitude ramps in, stays steady, then ramps back out.
+    """
+    if not (0 <= attack <= 100 and 0 <= hold <= 100 and 0 <= release <= 100):
+        raise ValueError("attack, hold, and release must each be between 0 and 100.")
+    if attack + hold + release > 100:
+        raise ValueError("attack + hold + release must not exceed 100.")
+
+    n = duration_samples
+
+    # ------------------------------------------------------------------ #
+    # 1. White noise                                                       #
+    # ------------------------------------------------------------------ #
+    rng = np.random.default_rng()
+    noise = rng.standard_normal(n).astype(np.float32)
+
+    # ------------------------------------------------------------------ #
+    # 2. Tremolo LFO  (half-rectified sine → range [0, 1])               #
+    #    A full sine at `frequency` Hz is shifted up and clipped so that  #
+    #    the amplitude dips all the way to 0 on every trough.             #
+    # ------------------------------------------------------------------ #
+    t = np.arange(n, dtype=np.float64) / sample_rate
+    lfo = (np.sin(2.0 * np.pi * frequency * t) + 1.0) * 0.5   # [0, 1]
+    lfo = lfo.astype(np.float32)
+
+    # ------------------------------------------------------------------ #
+    # 3. Macro envelope  (attack / hold / release)                        #
+    # ------------------------------------------------------------------ #
+    attack_samples  = int(round(n * attack  / 100.0))
+    hold_samples    = int(round(n * hold    / 100.0))
+    release_samples = int(round(n * release / 100.0))
+
+    # Clamp so we never exceed the buffer length
+    tail_samples = n - attack_samples - hold_samples - release_samples
+    tail_samples = max(tail_samples, 0)
+
+    envelope = np.empty(n, dtype=np.float32)
+    idx = 0
+
+    # Attack: linear ramp 0 → 1
+    if attack_samples > 0:
+        envelope[idx:idx + attack_samples] = np.linspace(0.0, 1.0, attack_samples, dtype=np.float32)
+    idx += attack_samples
+
+    # Hold: flat at 1
+    if hold_samples > 0:
+        envelope[idx:idx + hold_samples] = 1.0
+    idx += hold_samples
+
+    # Release: linear ramp 1 → 0
+    if release_samples > 0:
+        envelope[idx:idx + release_samples] = np.linspace(1.0, 0.0, release_samples, dtype=np.float32)
+    idx += release_samples
+
+    # Tail (any leftover percentage): silence
+    if tail_samples > 0:
+        envelope[idx:idx + tail_samples] = 0.0
+
+    # ------------------------------------------------------------------ #
+    # 4. Combine                                                          #
+    # ------------------------------------------------------------------ #
+    return noise * lfo * envelope
+
+
 def white_noise(num_samples):
     """Generate white noise with a flat frequency spectrum.
 
