@@ -4,6 +4,9 @@ from . import clean_audio
 from .config import sample_rate
 from .config import pitch_correct_fft_size as old_pitch_correct_fft_size
 from .config import pitch_correcter_hop as old_pitch_correcter_hop
+pitch_correct_fft_size = 2 ** old_pitch_correct_fft_size
+pitch_correcter_hop = pitch_correct_fft_size // old_pitch_correcter_hop
+
 
 
 NOTE_CLASSES = ["c", "c#", "d", "d#", "e", "f", "f#", "g", "g#", "a", "a#", "b"]
@@ -149,7 +152,7 @@ class PitchCorrector:
             a list of (frame_idx, note_class, octave) and hop_length is the
             pYIN hop size in 16 kHz samples.
         """
-        hop_length = PITCH_DETECT_FRAME_LENGTH // 4
+
         audio_16k = downsample_for_pitch(audio)
         frequencies, voiced_flags = detect_pitch(
             audio_16k, self.min_frequency, self.max_frequency
@@ -169,4 +172,4 @@ class PitchCorrector:
             note = self._frame_to_note(freq, hop_rms[frame_idx], peak_amplitude)
             if note is not None:
                 results.append((int(frame_idx), note[0], note[1]))
-        return results, hop_length
+        return results, pitch_correcter_hop
