@@ -20,12 +20,9 @@ import numpy as np
 from scipy.fft import irfft, rfftfreq
 
 
-
-def tremolo_noise(frequency: float,
-                  duration_samples: int,
-                  attack: float,
-                  hold: float,
-                  release: float) -> np.ndarray:
+def tremolo_noise(
+    frequency: float, duration_samples: int, attack: float, hold: float, release: float
+) -> np.ndarray:
     """
     Generate white noise with a tremolo envelope applied.
 
@@ -69,14 +66,14 @@ def tremolo_noise(frequency: float,
     #    the amplitude dips all the way to 0 on every trough.             #
     # ------------------------------------------------------------------ #
     t = np.arange(n, dtype=np.float64) / sample_rate
-    lfo = (np.sin(2.0 * np.pi * frequency * t) + 1.0) * 0.5   # [0, 1]
+    lfo = (np.sin(2.0 * np.pi * frequency * t) + 1.0) * 0.5  # [0, 1]
     lfo = lfo.astype(np.float32)
 
     # ------------------------------------------------------------------ #
     # 3. Macro envelope  (attack / hold / release)                        #
     # ------------------------------------------------------------------ #
-    attack_samples  = int(round(n * attack  / 100.0))
-    hold_samples    = int(round(n * hold    / 100.0))
+    attack_samples = int(round(n * attack / 100.0))
+    hold_samples = int(round(n * hold / 100.0))
     release_samples = int(round(n * release / 100.0))
 
     # Clamp so we never exceed the buffer length
@@ -88,22 +85,26 @@ def tremolo_noise(frequency: float,
 
     # Attack: linear ramp 0 → 1
     if attack_samples > 0:
-        envelope[idx:idx + attack_samples] = np.linspace(0.0, 1.0, attack_samples, dtype=np.float32)
+        envelope[idx : idx + attack_samples] = np.linspace(
+            0.0, 1.0, attack_samples, dtype=np.float32
+        )
     idx += attack_samples
 
     # Hold: flat at 1
     if hold_samples > 0:
-        envelope[idx:idx + hold_samples] = 1.0
+        envelope[idx : idx + hold_samples] = 1.0
     idx += hold_samples
 
     # Release: linear ramp 1 → 0
     if release_samples > 0:
-        envelope[idx:idx + release_samples] = np.linspace(1.0, 0.0, release_samples, dtype=np.float32)
+        envelope[idx : idx + release_samples] = np.linspace(
+            1.0, 0.0, release_samples, dtype=np.float32
+        )
     idx += release_samples
 
     # Tail (any leftover percentage): silence
     if tail_samples > 0:
-        envelope[idx:idx + tail_samples] = 0.0
+        envelope[idx : idx + tail_samples] = 0.0
 
     # ------------------------------------------------------------------ #
     # 4. Combine                                                          #
@@ -267,10 +268,8 @@ def impulse_train(frequency, num_samples):
     return waveform.astype(np.float32)
 
 
-
-
 def bandlimited_sawtooth_fft(frequency, num_samples):
-    freqs = rfftfreq(num_samples, d=1.0/sample_rate)
+    freqs = rfftfreq(num_samples, d=1.0 / sample_rate)
     spectrum = np.zeros(len(freqs), dtype=np.complex64)
     for h in range(1, int(sample_rate / (2 * frequency)) + 1):
         bin_idx = round(h * frequency * num_samples / sample_rate)

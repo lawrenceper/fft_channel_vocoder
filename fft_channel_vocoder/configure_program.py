@@ -1,6 +1,9 @@
 import json
 from pathlib import Path
-from .config import config_file, DEFAULT_CONFIG # Source of Truth - I like source of truths, less code!
+from .config import (
+    config_file,
+    DEFAULT_CONFIG,
+)  # Source of Truth - I like source of truths, less code!
 
 
 def load_config():
@@ -8,6 +11,7 @@ def load_config():
         with config_file.open("r") as f:
             return json.load(f)
     return DEFAULT_CONFIG
+
 
 def save_config(config):
     with open(config_file, "w") as f:
@@ -114,6 +118,7 @@ def edit_setting(config):
 
 def configure():
     edit_setting(load_config())
+
 
 if __name__ == "__main__":
     configure()

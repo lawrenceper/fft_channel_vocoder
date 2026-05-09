@@ -44,4 +44,6 @@ class Carrier_Buffer:
         if frequency <= 0:
             self.carrier[start:end] += white_noise(n)
         else:
-            self.carrier[start:end] += bandlimited_sawtooth_fft(frequency, n) + highpass(white_noise(n), 5000)
+            self.carrier[start:end] += bandlimited_sawtooth_fft(
+                frequency, n
+            ) + highpass(white_noise(n), 5000)

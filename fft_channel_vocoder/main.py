@@ -110,7 +110,7 @@ def main():
         for scale_file, scale_name in files_exist(input_path, "scale", "txt"):
             print(f"Loading scale from {scale_file.name}")
             scale_notes, scale_params = load_scale(scale_file)
-            #print("Detecting pitch and correcting to scale")
+            # print("Detecting pitch and correcting to scale")
             carrier_data = scale_synth.synthesize_pitch_corrected_carrier(
                 voice_data,
                 scale_notes,

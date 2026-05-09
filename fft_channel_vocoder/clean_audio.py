@@ -140,7 +140,9 @@ def highpass(audio, cutoff_frequency):
     Returns:
         Filtered numpy array of the same shape and dtype.
     """
-    second_order_sections = butter(4, cutoff_frequency, btype="high", fs=sample_rate, output="sos")
+    second_order_sections = butter(
+        4, cutoff_frequency, btype="high", fs=sample_rate, output="sos"
+    )
     return sosfilt(second_order_sections, audio).astype(audio.dtype)
 
 
@@ -154,7 +156,9 @@ def lowpass(audio, cutoff_frequency):
     Returns:
         Filtered numpy array of the same shape and dtype.
     """
-    second_order_sections = butter(4, cutoff_frequency, btype="low", fs=sample_rate, output="sos")
+    second_order_sections = butter(
+        4, cutoff_frequency, btype="low", fs=sample_rate, output="sos"
+    )
     return sosfilt(second_order_sections, audio).astype(audio.dtype)
 
 
@@ -185,7 +189,7 @@ def clean(audio, current_sample_rate=None, skip_mono_conversion=False):
         return np.zeros(1024, dtype=np.float32)  # Return a small slice of silence
 
     # Change the sample rate if file_sample_rate is supplied
-    #print("Fixing audio.")
+    # print("Fixing audio.")
     if current_sample_rate is not None and current_sample_rate != sample_rate:
         new_audio = resample(audio, current_sample_rate)  # Avoid forshadowing
     else:

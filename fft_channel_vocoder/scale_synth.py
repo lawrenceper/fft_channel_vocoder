@@ -1,6 +1,10 @@
 import numpy as np
 from .config import sample_rate
-from .pitch_corrector import PitchCorrector, midi_note_to_frequency, PITCH_DETECT_SAMPLE_RATE
+from .pitch_corrector import (
+    PitchCorrector,
+    midi_note_to_frequency,
+    PITCH_DETECT_SAMPLE_RATE,
+)
 from .buffers import Carrier_Buffer
 from . import clean_audio
 
@@ -112,8 +116,8 @@ def synthesize_pitch_corrected_carrier(
         frames_and_notes, hop_length, PITCH_DETECT_SAMPLE_RATE, total_duration
     )
 
-    #print(f"Detected {len(schedule)} note regions")
-    #print("Building carrier buffer")
+    # print(f"Detected {len(schedule)} note regions")
+    # print("Building carrier buffer")
 
     carrier_buffer = Carrier_Buffer(total_duration)
 
@@ -123,6 +127,6 @@ def synthesize_pitch_corrected_carrier(
         )
         carrier_buffer.add_wave(note_info["start"], note_info["end"], frequency)
 
-    #print("Cleanup")
+    # print("Cleanup")
     carrier = carrier_buffer.carrier
     return clean_audio.clean(carrier)

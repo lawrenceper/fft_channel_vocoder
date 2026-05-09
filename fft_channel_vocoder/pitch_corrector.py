@@ -4,15 +4,14 @@ from . import clean_audio
 from .config import sample_rate
 from .config import pitch_correct_fft_size as old_pitch_correct_fft_size
 from .config import pitch_correcter_hop as old_pitch_correcter_hop
-pitch_correct_fft_size = 2 ** old_pitch_correct_fft_size
-pitch_correcter_hop = pitch_correct_fft_size // old_pitch_correcter_hop
 
+pitch_correct_fft_size = 2**old_pitch_correct_fft_size
+pitch_correcter_hop = pitch_correct_fft_size // old_pitch_correcter_hop
 
 
 NOTE_CLASSES = ["c", "c#", "d", "d#", "e", "f", "f#", "g", "g#", "a", "a#", "b"]
 
 PITCH_DETECT_SAMPLE_RATE = 16000
-
 
 
 def frequency_to_midi_note(frequency):
@@ -99,7 +98,7 @@ def detect_pitch(audio_16k, min_frequency=50, max_frequency=500):
         fmax=float(max_frequency),
         sr=PITCH_DETECT_SAMPLE_RATE,
         frame_length=pitch_correct_fft_size,
-        hop_length=pitch_correcter_hop
+        hop_length=pitch_correcter_hop,
     )
     return frequencies, voiced_flags
 
