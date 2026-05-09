@@ -17,6 +17,7 @@ from .config import sample_rate
 
 # import libraries
 import numpy as np
+from scipy.fft import irfft, rfftfreq
 
 
 
@@ -264,3 +265,19 @@ def impulse_train(frequency, num_samples):
     if period_in_samples > 0:
         waveform[::period_in_samples] = 1.0
     return waveform.astype(np.float32)
+
+
+
+
+def bandlimited_sawtooth_fft(frequency, num_samples):
+    freqs = rfftfreq(num_samples, d=1.0/sample_rate)
+    spectrum = np.zeros(len(freqs), dtype=np.complex64)
+    for h in range(1, int(sample_rate / (2 * frequency)) + 1):
+        bin_idx = round(h * frequency * num_samples / sample_rate)
+        if bin_idx < len(spectrum):
+            spectrum[bin_idx] = -1j / h  # sawtooth phase
+    output = irfft(spectrum, n=num_samples).astype(np.float32)
+    peak = np.max(np.abs(output))
+    if peak > 0:
+        output /= peak
+    return output

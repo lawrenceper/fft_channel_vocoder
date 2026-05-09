@@ -9,7 +9,7 @@ from .config import sample_rate
 # import other libraries
 import numpy as np
 from math import gcd
-from scipy.signal import resample_poly
+from scipy.signal import resample_poly, butter, sosfilt
 
 
 def make_stereo(left, right):
@@ -35,22 +35,27 @@ def make_stereo(left, right):
     return stereo_audio
 
 
-def resample(audio, current_sample_rate):
-    """Resample audio to the project sample rate using polyphase filtering.
+def resample(audio, current_sample_rate, target_sample_rate=None):
+    """Resample audio to the target sample rate using polyphase filtering.
 
     Args:
         audio: Numpy array of audio samples.
         current_sample_rate: The sample rate of the input audio in Hz.
+        target_sample_rate: Destination sample rate in Hz. Defaults to the
+            project sample rate when not provided.
 
     Returns:
-        Numpy array resampled to the project sample rate, or the original
-        array unchanged if it already matches.
+        Numpy array resampled to target_sample_rate, or the original array
+        unchanged if the rates already match.
     """
-    if current_sample_rate == sample_rate:
+    if target_sample_rate is None:
+        target_sample_rate = sample_rate
+
+    if current_sample_rate == target_sample_rate:
         return audio
 
-    greatest_common_divisor = gcd(current_sample_rate, sample_rate)
-    up = sample_rate // greatest_common_divisor
+    greatest_common_divisor = gcd(current_sample_rate, target_sample_rate)
+    up = target_sample_rate // greatest_common_divisor
     down = current_sample_rate // greatest_common_divisor
     return resample_poly(audio, up, down)
 
@@ -125,6 +130,34 @@ def audio_check(audio, skip_mono_check=True):
         raise ValueError("Empty audio passed to vocoder")
 
 
+def highpass(audio, cutoff_frequency):
+    """Apply a 4th-order Butterworth high-pass filter to an audio array.
+
+    Args:
+        audio: 1D float32 numpy array of audio samples.
+        cutoff_frequency: The -3 dB cutoff frequency in Hz.
+
+    Returns:
+        Filtered numpy array of the same shape and dtype.
+    """
+    second_order_sections = butter(4, cutoff_frequency, btype="high", fs=sample_rate, output="sos")
+    return sosfilt(second_order_sections, audio).astype(audio.dtype)
+
+
+def lowpass(audio, cutoff_frequency):
+    """Apply a 4th-order Butterworth low-pass filter to an audio array.
+
+    Args:
+        audio: 1D float32 numpy array of audio samples.
+        cutoff_frequency: The -3 dB cutoff frequency in Hz.
+
+    Returns:
+        Filtered numpy array of the same shape and dtype.
+    """
+    second_order_sections = butter(4, cutoff_frequency, btype="low", fs=sample_rate, output="sos")
+    return sosfilt(second_order_sections, audio).astype(audio.dtype)
+
+
 def clean(audio, current_sample_rate=None, skip_mono_conversion=False):
     """Normalise and prepare an audio array for processing or saving.
 
@@ -152,7 +185,7 @@ def clean(audio, current_sample_rate=None, skip_mono_conversion=False):
         return np.zeros(1024, dtype=np.float32)  # Return a small slice of silence
 
     # Change the sample rate if file_sample_rate is supplied
-    print("Fixing audio.")
+    #print("Fixing audio.")
     if current_sample_rate is not None and current_sample_rate != sample_rate:
         new_audio = resample(audio, current_sample_rate)  # Avoid forshadowing
     else:

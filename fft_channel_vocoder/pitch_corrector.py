@@ -1,49 +1,15 @@
 import numpy as np
+import librosa
+from . import clean_audio
 from .config import sample_rate
+from .config import pitch_correct_fft_size as old_pitch_correct_fft_size
+from .config import pitch_correcter_hop as old_pitch_correcter_hop
+
 
 NOTE_CLASSES = ["c", "c#", "d", "d#", "e", "f", "f#", "g", "g#", "a", "a#", "b"]
 
+PITCH_DETECT_SAMPLE_RATE = 16000
 
-def measure_harmonic_strength(autocorr_array, period, num_cycles_check=4):
-    """Measure harmonic structure strength via periodicity in autocorrelation.
-
-    Voiced sounds create repeating periodic structure in autocorrelation.
-    Unvoiced sounds (sibilants) show no periodicity—just noise.
-
-    Args:
-        autocorr_array: Normalized autocorrelation array from correlate().
-        period: Detected period in samples (sample index, not lag).
-        num_cycles_check: Number of harmonic cycles to analyze.
-
-    Returns:
-        Harmonic strength score in [0, 1]. High score = strong periodicity.
-    """
-    if period <= 0 or period * num_cycles_check >= len(autocorr_array):
-        return 0.0
-
-    fundamental_peak = autocorr_array[period]
-    if fundamental_peak < 0.1:
-        return 0.0
-
-    cycle_peaks = []
-    for cycle_num in range(1, num_cycles_check + 1):
-        cycle_idx = period * cycle_num
-        if cycle_idx >= len(autocorr_array):
-            break
-        peak_value = abs(autocorr_array[cycle_idx])
-        cycle_peaks.append(peak_value)
-
-    if not cycle_peaks:
-        return 0.0
-
-    cycle_peaks = np.array(cycle_peaks)
-    decaying_pattern = np.any(cycle_peaks[1:] < cycle_peaks[:-1])
-
-    mean_cycle_strength = np.mean(cycle_peaks)
-    relative_strength = mean_cycle_strength / (fundamental_peak + 1e-10)
-
-    harmonic_strength = relative_strength * (0.7 if decaying_pattern else 0.4)
-    return min(1.0, max(0.0, harmonic_strength))
 
 
 def frequency_to_midi_note(frequency):
@@ -108,70 +74,31 @@ def determine_best_octave(frequency, note_class):
         return octave
 
 
-def compute_fft_autocorrelation(audio_frame):
-    """Compute autocorrelation using FFT for O(n log n) performance.
+def downsample_for_pitch(audio):
+    """Downsample audio from the project rate to the pitch detection rate."""
+    return clean_audio.resample(audio, sample_rate, PITCH_DETECT_SAMPLE_RATE)
+
+
+def detect_pitch(audio_16k, min_frequency=50, max_frequency=500):
+    """Run pYIN on full 16 kHz audio, returning per-hop pitch arrays.
 
     Args:
-        audio_frame: Audio samples (1D numpy array).
-
-    Returns:
-        Normalized autocorrelation array.
-    """
-    frame_length = len(audio_frame)
-    padded_length = 2 ** int(np.ceil(np.log2(2 * frame_length)))
-
-    windowed_frame = audio_frame * np.hanning(frame_length)
-    padded_frame = np.zeros(padded_length)
-    padded_frame[:frame_length] = windowed_frame
-
-    fft_result = np.fft.fft(padded_frame)
-    power_spectrum = np.abs(fft_result) ** 2
-    autocorr = np.fft.ifft(power_spectrum).real
-
-    autocorr = autocorr[:frame_length]
-    autocorr = autocorr / (autocorr[0] + 1e-10)
-
-    return autocorr
-
-
-def detect_pitch(audio_frame, min_frequency=50, max_frequency=500):
-    """Detect pitch using autocorrelation-based method with harmonic verification.
-
-    Args:
-        audio_frame: Audio samples (1D numpy array).
+        audio_16k: Audio at PITCH_DETECT_SAMPLE_RATE (1D float32 numpy array).
         min_frequency: Minimum frequency to search (Hz).
         max_frequency: Maximum frequency to search (Hz).
 
     Returns:
-        Tuple of (frequency_hz, confidence, harmonic_strength).
-        Confidence and harmonic_strength are in [0, 1].
-        Returns (0, 0, 0) if no pitch detected.
+        Tuple of (frequencies, voiced_flags) — one value per pYIN hop.
     """
-    frame_length = len(audio_frame)
-    if frame_length == 0:
-        return (0, 0, 0)
-
-    min_period = int(sample_rate / max_frequency)
-    max_period = int(sample_rate / min_frequency)
-
-    if max_period >= frame_length or min_period <= 0:
-        return (0, 0, 0)
-
-    autocorr = compute_fft_autocorrelation(audio_frame)
-
-    search_range = autocorr[min_period : max_period + 1]
-    if len(search_range) == 0:
-        return (0, 0, 0)
-
-    max_idx = np.argmax(search_range)
-    period = min_period + max_idx
-
-    confidence = search_range[max_idx] if len(search_range) > 0 else 0
-    frequency = sample_rate / period if period > 0 else 0
-
-    harmonic_strength = measure_harmonic_strength(autocorr, period, num_cycles_check=4)
-
-    return (frequency, confidence, harmonic_strength)
+    frequencies, voiced_flags, _ = librosa.pyin(
+        audio_16k.astype(np.float32),
+        fmin=float(min_frequency),
+        fmax=float(max_frequency),
+        sr=PITCH_DETECT_SAMPLE_RATE,
+        frame_length=pitch_correct_fft_size,
+        hop_length=pitch_correcter_hop
+    )
+    return frequencies, voiced_flags
 
 
 class PitchCorrector:
@@ -181,7 +108,6 @@ class PitchCorrector:
         self,
         scale_notes,
         noise_gate_threshold_db=-20,
-        harmonic_strength_threshold=0.3,
         min_frequency=50,
         max_frequency=500,
     ):
@@ -190,55 +116,57 @@ class PitchCorrector:
         Args:
             scale_notes: List of note class strings (e.g., ["c", "d", "e"]).
             noise_gate_threshold_db: Gate threshold in dB relative to peak.
-            harmonic_strength_threshold: Minimum harmonic strength (0-1) to accept pitch.
-                Higher values reject more non-harmonic content (default 0.3 for balance).
             min_frequency: Minimum frequency to detect (Hz, default 50).
             max_frequency: Maximum frequency to detect (Hz, default 500).
         """
         self.scale_notes = scale_notes
         self.noise_gate_threshold_db = noise_gate_threshold_db
-        self.harmonic_strength_threshold = harmonic_strength_threshold
         self.min_frequency = min_frequency
         self.max_frequency = max_frequency
-        self.last_note = None
-        self.peak_amplitude = 1e-6
 
-    def update_peak(self, audio_data):
-        """Update peak amplitude for noise gate calculation."""
-        max_val = np.max(np.abs(audio_data))
-        if max_val > self.peak_amplitude:
-            self.peak_amplitude = max_val
+    def _frame_to_note(self, freq, rms, peak_amplitude):
+        """Convert a voiced frame to a snapped (note_class, octave) or None."""
+        rms_db = 20 * np.log10(rms / peak_amplitude + 1e-10)
+        if rms_db < self.noise_gate_threshold_db:
+            return None
+        note_class = frequency_to_note_class(freq)
+        snapped = snap_note_to_scale(note_class, self.scale_notes)
+        if snapped is None:
+            return None
+        return (snapped, determine_best_octave(freq, snapped))
 
-    def process_frame(self, audio_frame):
-        """Process one audio frame and return (note_class, octave) or None.
+    def process_audio(self, audio):
+        """Detect and snap all pitched frames in a full audio array.
+
+        Downsamples to 16 kHz, runs pYIN once on the whole signal, then
+        applies the noise gate and scale snap to every voiced hop.
+
+        Args:
+            audio: Full voice audio at the project sample rate (1D numpy array).
 
         Returns:
-            Tuple of (note_class, octave) or None if below noise gate or harmonic threshold.
+            Tuple of (frames_and_notes, hop_length) where frames_and_notes is
+            a list of (frame_idx, note_class, octave) and hop_length is the
+            pYIN hop size in 16 kHz samples.
         """
-        rms = np.sqrt(np.mean(audio_frame**2))
-        amplitude_db = 20 * np.log10(rms / self.peak_amplitude + 1e-10)
-
-        if amplitude_db < self.noise_gate_threshold_db:
-            return self.last_note
-
-        frequency, confidence, harmonic_strength = detect_pitch(
-            audio_frame,
-            min_frequency=self.min_frequency,
-            max_frequency=self.max_frequency,
+        hop_length = PITCH_DETECT_FRAME_LENGTH // 4
+        audio_16k = downsample_for_pitch(audio)
+        frequencies, voiced_flags = detect_pitch(
+            audio_16k, self.min_frequency, self.max_frequency
         )
-
-        if confidence < 0.1:
-            return self.last_note
-
-        if harmonic_strength < self.harmonic_strength_threshold:
-            return self.last_note
-
-        note_class = frequency_to_note_class(frequency)
-        snapped_note = snap_note_to_scale(note_class, self.scale_notes)
-
-        if snapped_note is None:
-            return self.last_note
-
-        octave = determine_best_octave(frequency, snapped_note)
-        self.last_note = (snapped_note, octave)
-        return self.last_note
+        hop_rms = librosa.feature.rms(
+            y=audio_16k,
+            frame_length=PITCH_DETECT_FRAME_LENGTH,
+            hop_length=hop_length,
+        )[0]
+        peak_amplitude = float(np.max(np.abs(audio_16k))) + 1e-6
+        safe_length = min(len(voiced_flags), len(hop_rms))
+        results = []
+        for frame_idx in np.where(voiced_flags[:safe_length])[0]:
+            freq = frequencies[frame_idx]
+            if np.isnan(freq):
+                continue
+            note = self._frame_to_note(freq, hop_rms[frame_idx], peak_amplitude)
+            if note is not None:
+                results.append((int(frame_idx), note[0], note[1]))
+        return results, hop_length

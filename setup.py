@@ -11,6 +11,7 @@ setup(
         "numpy",
         "scipy",
         "mido",
+        "librosa",
     ],
     entry_points={
         "console_scripts": [

@@ -1,11 +1,8 @@
 import numpy as np
 from .config import sample_rate
-from .pitch_corrector import PitchCorrector, midi_note_to_frequency
+from .pitch_corrector import PitchCorrector, midi_note_to_frequency, PITCH_DETECT_SAMPLE_RATE
 from .buffers import Carrier_Buffer
 from . import clean_audio
-
-window_size = 2**13
-hop_size = window_size // 8
 
 
 def build_note_schedule_from_frames(
@@ -101,38 +98,22 @@ def synthesize_pitch_corrected_carrier(
     Returns:
         Carrier wave as 1D numpy array, same length as voice_data.
     """
-    print("Initializing pitch corrector")
     corrector = PitchCorrector(
         scale_notes,
         noise_gate_threshold_db,
         min_frequency=min_frequency,
         max_frequency=max_frequency,
     )
-    corrector.update_peak(voice_data)
 
     total_duration = len(voice_data) / sample_rate
-    print(f"Processing voice for pitch detection (duration: {total_duration:.2f}s)")
-
-    frames_and_notes = []
-    frame_idx = 0
-
-    for start_sample in range(0, len(voice_data), hop_size):
-        end_sample = min(start_sample + window_size, len(voice_data))
-        frame = voice_data[start_sample:end_sample]
-
-        result = corrector.process_frame(frame)
-        if result is not None:
-            note_class, octave = result
-            frames_and_notes.append((frame_idx, note_class, octave))
-
-        frame_idx += 1
+    frames_and_notes, hop_length = corrector.process_audio(voice_data)
 
     schedule = build_note_schedule_from_frames(
-        frames_and_notes, hop_size, sample_rate, total_duration
+        frames_and_notes, hop_length, PITCH_DETECT_SAMPLE_RATE, total_duration
     )
 
-    print(f"Detected {len(schedule)} note regions")
-    print("Building carrier buffer")
+    #print(f"Detected {len(schedule)} note regions")
+    #print("Building carrier buffer")
 
     carrier_buffer = Carrier_Buffer(total_duration)
 
@@ -142,6 +123,6 @@ def synthesize_pitch_corrected_carrier(
         )
         carrier_buffer.add_wave(note_info["start"], note_info["end"], frequency)
 
-    print("Cleanup")
+    #print("Cleanup")
     carrier = carrier_buffer.carrier
     return clean_audio.clean(carrier)

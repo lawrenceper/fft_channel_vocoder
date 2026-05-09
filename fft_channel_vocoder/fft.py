@@ -92,7 +92,7 @@ def apply_frequency_dependent_smoothing(magnitude_spectrum):
     return smoothed
 
 
-def apply_temporal_envelope(magnitude_spectrum, attack_seconds=0.003, release_seconds=0.005):
+def apply_temporal_envelope(magnitude_spectrum, attack_seconds=0.001, release_seconds=0.01):
     """Apply asymmetric attack/release smoothing across the time axis.
 
     For each frequency bin, energy is allowed to rise quickly (attack) and

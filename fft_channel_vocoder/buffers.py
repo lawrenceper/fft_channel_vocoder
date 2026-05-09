@@ -4,7 +4,8 @@
 
 import numpy as np
 from .config import sample_rate
-from .noise_generators import tremolo_noise, pulse_wave
+from .noise_generators import white_noise, bandlimited_sawtooth_fft
+from .clean_audio import highpass
 
 
 class Carrier_Buffer:
@@ -41,8 +42,6 @@ class Carrier_Buffer:
         if n <= 0:
             return
         if frequency <= 0:
-            # Add white noise
             self.carrier[start:end] += white_noise(n)
         else:
-            # Append a wave with the frequency
-            self.carrier[start:end] += pulse_wave(frequency, n)
+            self.carrier[start:end] += bandlimited_sawtooth_fft(frequency, n) + highpass(white_noise(n), 5000)
