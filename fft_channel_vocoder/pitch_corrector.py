@@ -158,8 +158,8 @@ class PitchCorrector:
         )
         hop_rms = librosa.feature.rms(
             y=audio_16k,
-            frame_length=PITCH_DETECT_FRAME_LENGTH,
-            hop_length=hop_length,
+            frame_length=pitch_correct_fft_size,
+            hop_length=pitch_correcter_hop
         )[0]
         peak_amplitude = float(np.max(np.abs(audio_16k))) + 1e-6
         safe_length = min(len(voiced_flags), len(hop_rms))
