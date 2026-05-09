@@ -7,8 +7,8 @@ DEFAULT_CONFIG = {
     "sample_rate": 96000,
     "vocoder_fft_size": 12,
     "vocoder_hop": 4,
-    "pitch_correct_fft_size": 13,
-    "pitch_correcter_hop": 4,
+    "pitch_correct_fft_size": 11,
+    "pitch_correcter_hop": 8,
 }
 
 
