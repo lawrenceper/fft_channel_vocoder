@@ -1,3 +1,7 @@
+# Custom gitignores for this project
+config.json
+
+# Claude Code files and settings
 .claude
 
 # Byte-compiled / optimized / DLL files
