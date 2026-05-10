@@ -12,6 +12,7 @@ dependencies = [
     "numpy",
     "scipy",
     "mido",
+    "librosa",
 ]
 
 [project.scripts]
