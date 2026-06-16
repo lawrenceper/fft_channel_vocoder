@@ -4,7 +4,7 @@ from pathlib import Path
 config_file = Path(__file__).parent / "config.json"
 
 DEFAULT_CONFIG = {
-    "sample_rate": 96000,
+    "sample_rate": 48000,
     "vocoder_fft_size": 12,
     "vocoder_hop": 4,
     "pitch_correct_fft_size": 11,
