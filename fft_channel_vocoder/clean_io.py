@@ -5,7 +5,7 @@
 from .config import sample_rate
 from . import clean_audio
 import numpy as np
-from scipy.io import wavfile
+import soundfile as sf
 
 
 def does_exist(filename):
@@ -37,21 +37,26 @@ def load(filename):
         1D float32 numpy array normalised to [-1.0, 1.0].
     """
     #  Load the wav files
-    file_sample_rate, audio = wavfile.read(filename)
+    audio, file_sample_rate = sf.read(filename)
 
     # Clean audio
     return clean_audio.clean(audio, file_sample_rate)
 
 
-def save(filename, audio):
+def save(filename, audio, convert_16bit=False):
     """Clean and write audio to a WAV file at the project sample rate.
 
     Args:
         filename: Destination path for the WAV file.
         audio: Numpy array of audio samples to save. May be mono or stereo.
+        convert_16bit: When True, save as 16 bit integer instead of 32 bit
+            float.
     """
     # Cleanup
-    new_audio = clean_audio.clean(audio, skip_mono_conversion=True)
+    new_audio = clean_audio.clean(
+        audio, skip_mono_conversion=True, convert_16bit=convert_16bit
+    )
 
     # Save to file
-    wavfile.write(filename, sample_rate, new_audio.astype(np.float32))
+    subtype = "PCM_16" if convert_16bit else "FLOAT"
+    sf.write(filename, new_audio, sample_rate, subtype=subtype)

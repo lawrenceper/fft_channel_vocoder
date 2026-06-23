@@ -92,6 +92,23 @@ def convert_float32(audio):
     return audio.astype(np.float32)
 
 
+def convert_int16(audio):
+    """Convert an audio array to 16 bit integer.
+
+    float audio is assumed to be in the [-1.0, 1.0] range and is scaled
+    before casting. Any other dtype is cast directly to int16.
+
+    Args:
+        audio: Numpy array of audio samples.
+
+    Returns:
+        int16 numpy array.
+    """
+    if np.issubdtype(audio.dtype, np.floating):
+        return (audio * 32767.0).astype(np.int16)
+    return audio.astype(np.int16)
+
+
 def normalise(audio):
     """Normalise audio so the peak absolute value is 1.0.
 
@@ -162,12 +179,17 @@ def lowpass(audio, cutoff_frequency):
     return sosfilt(second_order_sections, audio).astype(audio.dtype)
 
 
-def clean(audio, current_sample_rate=None, skip_mono_conversion=False):
+def clean(
+    audio,
+    current_sample_rate=None,
+    skip_mono_conversion=False,
+    convert_16bit=False,
+):
     """Normalise and prepare an audio array for processing or saving.
 
-    Runs in order: validate → resample → make mono → convert to float32 →
-    normalise. Resampling is skipped when current_sample_rate is None or
-    already matches the project rate.
+    Runs in order: validate → resample → make mono → convert to float32 or
+    int16 → normalise. Resampling is skipped when current_sample_rate is
+    None or already matches the project rate.
 
     Args:
         audio: Numpy array of audio samples.
@@ -175,9 +197,10 @@ def clean(audio, current_sample_rate=None, skip_mono_conversion=False):
             skip resampling.
         skip_mono_conversion: When True, skip the make_mono step (needed when
             saving stereo output).
+        convert_16bit: When True, convert to int16 instead of float32.
 
     Returns:
-        Cleaned float32 numpy array ready for processing or writing to disk.
+        Cleaned numpy array ready for processing or writing to disk.
     """
     # safety checks
     audio_check(audio)
@@ -197,8 +220,11 @@ def clean(audio, current_sample_rate=None, skip_mono_conversion=False):
     # Make the track Mono
     if not skip_mono_conversion:
         new_audio = make_mono(new_audio)
-    # Convert to float 32
-    new_audio = convert_float32(new_audio)
-    # Convert to Mono
+    # Normalise before bit depth conversion
     new_audio = normalise(new_audio)
+    # Convert to the requested bit depth
+    if convert_16bit:
+        new_audio = convert_int16(new_audio)
+    else:
+        new_audio = convert_float32(new_audio)
     return new_audio

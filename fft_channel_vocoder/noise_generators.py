@@ -268,13 +268,41 @@ def impulse_train(frequency, num_samples):
     return waveform.astype(np.float32)
 
 
-def bandlimited_sawtooth_fft(frequency, num_samples):
+
+def bandlimited_sawtooth_fft(
+    frequency,
+    num_samples,
+    rolloff_exp=1.0,
+    formant_centers=(500.0, 1500.0, 2500.0),
+    formant_widths=(200.0, 300.0, 400.0),
+    formant_gains=(1.5, 1.3, 1.1),
+    presence_center=4000.0,
+    presence_width=1000.0,
+    presence_gain=1.2,
+):
     freqs = rfftfreq(num_samples, d=1.0 / sample_rate)
     spectrum = np.zeros(len(freqs), dtype=np.complex64)
+
     for h in range(1, int(sample_rate / (2 * frequency)) + 1):
         bin_idx = round(h * frequency * num_samples / sample_rate)
-        if bin_idx < len(spectrum):
-            spectrum[bin_idx] = -1j / h  # sawtooth phase
+        if bin_idx >= len(spectrum):
+            break
+
+        harm_freq = h * frequency
+
+        # base sawtooth amplitude with adjustable rolloff
+        amplitude = 1.0 / (h ** rolloff_exp)
+
+        # formant shaping: Gaussian bumps at vowel formant centers
+        boost = 1.0
+        for fc, bw, gain in zip(formant_centers, formant_widths, formant_gains):
+            boost += (gain - 1.0) * np.exp(-0.5 * ((harm_freq - fc) / bw) ** 2)
+
+        # presence boost to bridge toward the pink noise sibilant layer
+        boost += (presence_gain - 1.0) * np.exp(-0.5 * ((harm_freq - presence_center) / presence_width) ** 2)
+
+        spectrum[bin_idx] = -1j * amplitude * boost
+
     output = irfft(spectrum, n=num_samples).astype(np.float32)
     peak = np.max(np.abs(output))
     if peak > 0:

@@ -13,6 +13,7 @@ dependencies = [
     "scipy",
     "mido",
     "librosa",
+    "soundfile",
 ]
 
 [project.scripts]

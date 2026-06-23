@@ -4,8 +4,8 @@
 
 import numpy as np
 from .config import sample_rate
-from .noise_generators import white_noise, bandlimited_sawtooth_fft
-from .clean_audio import highpass
+from .noise_generators import pink_noise, bandlimited_sawtooth_fft
+from .clean_audio import highpass, normalise
 
 
 class Carrier_Buffer:
@@ -46,4 +46,13 @@ class Carrier_Buffer:
         else:
             self.carrier[start:end] += bandlimited_sawtooth_fft(
                 frequency, n
-            ) + highpass(white_noise(n), 5000)
+            ) + normalise(highpass(pink_noise(n), 6000))
+
+    def add_fill(self, frequency):
+        """Fill the entire buffer with one synthesized frequency.
+
+        Args:
+            frequency: Pitch in Hz. Pass 0 or negative to fill with white noise.
+        """
+        duration_seconds = self.total_samples / sample_rate
+        self.add_wave(0, duration_seconds, frequency)

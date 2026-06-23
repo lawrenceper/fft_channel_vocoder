@@ -4,12 +4,14 @@
 # This does the automation of opening a file, generating new sound, processing with the vocoder, and saving.
 
 from pathlib import Path
+from .config import sample_rate
 from . import fft
 from . import clean_audio
 from . import clean_io
 from . import midi_synth
 from . import scale_synth
 from .noise_generators import white_noise
+from.sfz_instrument import build_vocoded_instrument
 
 
 def files_exist(path, name, extension):
@@ -71,6 +73,43 @@ def load_scale(scale_file):
     return notes, params
 
 
+def process_midi_files(voice_data, voice_name, input_path, output_path):
+    """Vocode the voice against every MIDI carrier and save the results."""
+    for midi_file, midi_name in files_exist(input_path, "melody", "mid"):
+        print(f"Getting carier wave from {midi_file.name}")
+        carrier_data = midi_synth.synthesize_carrier_wave(midi_file)
+        print("Applying vocoder")
+        output_data = fft.vocode(voice_data, carrier_data)
+        clean_io.save(output_path / f"{voice_name}_{midi_name}.wav", output_data)
+
+
+def process_synth_files(voice_data, voice_name, input_path, output_path):
+    """Vocode the voice against every synth carrier wave and save the results."""
+    for synth_file, synth_name in files_exist(input_path, "synth", "wav"):
+        print(f"Loading carrier wave from {synth_file.name}")
+        carrier_data = clean_io.load(synth_file)
+        print("Applying vocoder")
+        output_data = fft.vocode(voice_data, carrier_data)
+        clean_io.save(output_path / f"{voice_name}_{synth_name}.wav", output_data)
+
+
+def process_scale_files(voice_data, voice_name, input_path, output_path):
+    """Vocode the voice against pitch-corrected carriers built from scale files."""
+    for scale_file, scale_name in files_exist(input_path, "scale", "txt"):
+        print(f"Loading scale from {scale_file.name}")
+        scale_notes, scale_params = load_scale(scale_file)
+        carrier_data = scale_synth.synthesize_pitch_corrected_carrier(
+            voice_data,
+            scale_notes,
+            noise_gate_threshold_db=-40,
+            min_frequency=scale_params["min_freq"],
+            max_frequency=scale_params["max_freq"],
+        )
+        print("Applying vocoder")
+        output_data = fft.vocode(voice_data, carrier_data)
+        clean_io.save(output_path / f"{voice_name}_{scale_name}.wav", output_data)
+
+
 def whisper(data):
     """
     Generates white noise data and vocodes
@@ -91,36 +130,18 @@ def main():
         voice_data = clean_io.load(voice_file)
 
         # Get all MIDI files
-        for midi_file, midi_name in files_exist(input_path, "melody", "mid"):
-            print(f"Getting carier wave from {midi_file.name}")
-            carrier_data = midi_synth.synthesize_carrier_wave(midi_file)
-            print("Applying vocoder")
-            output_data = fft.vocode(voice_data, carrier_data)
-            clean_io.save(output_path / f"{voice_name}_{midi_name}.wav", output_data)
+        process_midi_files(voice_data, voice_name, input_path, output_path)
 
         # Get all synth wave files
-        for synth_file, synth_name in files_exist(input_path, "synth", "wav"):
-            print(f"Loading carrier wave from {synth_file.name}")
-            carrier_data = clean_io.load(synth_file)
-            print("Applying vocoder")
-            output_data = fft.vocode(voice_data, carrier_data)
-            clean_io.save(output_path / f"{voice_name}_{synth_name}.wav", output_data)
+        process_synth_files(voice_data, voice_name, input_path, output_path)
 
         # Get all scale files for pitch correction
-        for scale_file, scale_name in files_exist(input_path, "scale", "txt"):
-            print(f"Loading scale from {scale_file.name}")
-            scale_notes, scale_params = load_scale(scale_file)
-            # print("Detecting pitch and correcting to scale")
-            carrier_data = scale_synth.synthesize_pitch_corrected_carrier(
-                voice_data,
-                scale_notes,
-                noise_gate_threshold_db=-40,
-                min_frequency=scale_params["min_freq"],
-                max_frequency=scale_params["max_freq"],
-            )
-            print("Applying vocoder")
-            output_data = fft.vocode(voice_data, carrier_data)
-            clean_io.save(output_path / f"{voice_name}_{scale_name}.wav", output_data)
+        process_scale_files(voice_data, voice_name, input_path, output_path)
+
+        # Build FFZ Instruments from your voice with the vocoder
+        if len(voice_data) <= sample_rate * 10:
+            build_vocoded_instrument(voice_data, f"{voice_name}_ffz_instrument")
+
 
         # Generate whisper track and save
         print("Generating stereo whisper track")
