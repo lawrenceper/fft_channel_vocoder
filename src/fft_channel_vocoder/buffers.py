@@ -4,7 +4,7 @@
 
 import numpy as np
 from .config import sample_rate
-from .noise_generators import pink_noise, bandlimited_sawtooth_fft
+from .noise_generators import pink_noise, bandlimited_sawtooth_fft, white_noise
 from .clean_audio import highpass, normalise
 
 

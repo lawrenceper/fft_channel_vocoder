@@ -195,7 +195,10 @@ def square_wave(frequency, num_samples):
         1D float32 numpy array with values of 1.0 or -1.0.
     """
     indices = np.arange(num_samples)
-    waveform = np.sign(np.sin(2 * np.pi * frequency * indices / sample_rate))
+    phase = np.sin(2 * np.pi * frequency * indices / sample_rate)
+    # np.sign(phase) would return 0.0 at exact zero crossings (e.g. index 0
+    # of every call); np.where keeps the output strictly +/-1.0 as documented.
+    waveform = np.where(phase >= 0, 1.0, -1.0)
     return waveform.astype(np.float32)
 
 

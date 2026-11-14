@@ -20,7 +20,7 @@ def does_exist(filename):
     try:
         with open(filename, "r") as f:
             return True
-    except:
+    except OSError:
         return False
 
 

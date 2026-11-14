@@ -140,7 +140,9 @@ def main():
 
         # Build FFZ Instruments from your voice with the vocoder
         if len(voice_data) <= sample_rate * 10:
-            build_vocoded_instrument(voice_data, f"{voice_name}_ffz_instrument")
+            build_vocoded_instrument(
+                voice_data, output_path / f"{voice_name}_ffz_instrument"
+            )
 
 
         # Generate whisper track and save

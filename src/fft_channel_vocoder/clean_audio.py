@@ -25,7 +25,7 @@ def make_stereo(left, right):
     # Check if they are the same length before stacking
     if left.shape != right.shape:
         raise ValueError(
-            f"Arrays must have the same shape. Got {a.shape} and {b.shape}"
+            f"Arrays must have the same shape. Got {left.shape} and {right.shape}"
         )
 
     # Stack arrays along a new axis to create (samples, 2)
@@ -203,13 +203,9 @@ def clean(
         Cleaned numpy array ready for processing or writing to disk.
     """
     # safety checks
+    # audio_check already raises on None/non-array input and on empty arrays,
+    # so there is no reachable empty/None case to handle beyond this point.
     audio_check(audio)
-    # If the synth returned an empty list or array, stop here
-    if audio is None or len(audio) == 0:
-        print(
-            "Warning: Received empty audio buffer in clean(). Returning silent array."
-        )
-        return np.zeros(1024, dtype=np.float32)  # Return a small slice of silence
 
     # Change the sample rate if file_sample_rate is supplied
     # print("Fixing audio.")

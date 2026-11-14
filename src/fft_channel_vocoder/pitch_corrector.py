@@ -31,20 +31,29 @@ def frequency_to_note_class(frequency):
     return NOTE_CLASSES[note_index]
 
 
+def circular_distance(first_note_index, second_note_index, note_count=12):
+    """Distance between two note indices going around the 12 note circle."""
+    direct_distance = abs(first_note_index - second_note_index) % note_count
+    return min(direct_distance, note_count - direct_distance)
+
+
 def snap_note_to_scale(note_class, scale_notes):
     """Find nearest allowed note class in scale."""
     if note_class not in NOTE_CLASSES:
         return None
 
     note_index = NOTE_CLASSES.index(note_class)
-    scale_indices = [NOTE_CLASSES.index(n) for n in scale_notes if n in NOTE_CLASSES]
+    valid_scale_notes = [n for n in scale_notes if n in NOTE_CLASSES]
 
-    if not scale_indices:
+    if not valid_scale_notes:
         return None
 
-    distances = [abs(note_index - scale_idx) for scale_idx in scale_indices]
+    distances = [
+        circular_distance(note_index, NOTE_CLASSES.index(n))
+        for n in valid_scale_notes
+    ]
     min_distance_idx = np.argmin(distances)
-    return scale_notes[min_distance_idx]
+    return valid_scale_notes[min_distance_idx]
 
 
 def determine_best_octave(frequency, note_class):
